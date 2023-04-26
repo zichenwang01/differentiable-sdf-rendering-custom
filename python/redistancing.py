@@ -1,11 +1,11 @@
-import fastsweep
+# import fastsweep
 
 
 def redistance(phi, method='fastsweep'):
 
-    if method == 'fastsweep':
-        return fastsweep.redistance(phi)
-    elif method == 'fmm':
+    # if method == 'fastsweep':
+        # return fastsweep.redistance(phi)
+    if method == 'fmm':
         import skfmm
         import numpy as np
         return skfmm.distance(phi, dx=1 / np.array(phi.shape))
