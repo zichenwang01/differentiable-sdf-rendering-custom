@@ -41,8 +41,14 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
     ref_images = load_ref_images(ref_image_paths, True)
 
     # Load scene, currently handle SDF shape separately from Mitsuba scene
-    sdf_scene = mi.load_file(ref_scene_name, shape_file='dummysdf.xml', sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_64.vol'),
-                             integrator=config.integrator, resx=scene_config.resx, resy=scene_config.resy, **mts_args)
+    sdf_scene = mi.load_file(
+        ref_scene_name, 
+        shape_file='dummysdf.xml', 
+        sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_64.vol'),
+        integrator=config.integrator, 
+        resx=scene_config.resx, resy=scene_config.resy, 
+        **mts_args
+    )
     sdf_object = sdf_scene.integrator().sdf
     sdf_scene.integrator().warp_field = config.get_warpfield(sdf_object)
 
@@ -79,8 +85,12 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
                                 seed=seed, spp=config.spp * config.primal_spp_mult,
                                 seed_grad=seed + 1 + len(scene_config.sensors), spp_grad=config.spp)
                 seed += 1 + len(scene_config.sensors)
+                
                 view_loss = scene_config.loss(img, ref_images[idx][sensor.film().crop_size()[0]]) / scene_config.batch_size
+                
+                # backpropagate loss
                 dr.backward(view_loss)
+                
                 bmp = resize_img(mi.Bitmap(img), scene_config.target_res)
                 mi.util.write_bitmap(join(opt_image_dir, f'opt-{i:04d}-{idx:02d}' + ('.png' if write_ldr_images else '.exr')), bmp)
                 loss += view_loss
