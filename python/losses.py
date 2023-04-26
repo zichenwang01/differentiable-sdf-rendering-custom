@@ -2,18 +2,23 @@ import drjit as dr
 import mitsuba as mi
 
 def l2(img, ref_img):
+    """L2 loss"""
     return dr.mean(dr.sqr(img - ref_img))
 
 def l1(img, ref_img):
+    """L1 loss"""
     return dr.mean(dr.abs(img - ref_img))
 
 def mape(img, ref_img):
+    """Mean absolute percentage error"""
     rel_error = dr.abs(img - ref_img) / dr.abs(1e-2 + dr.mean(ref_img, axis=-1))
     return dr.mean(rel_error)
 
 def downsample(img):
+    """Downsample an image by a factor of 2"""
     n_channels = img.shape[2]
     def linear(x, y):
+        """Linear indexing"""
         x = dr.clamp(x, 0, img.shape[0] - 1)
         y = dr.clamp(y, 0, img.shape[1] - 1)
         c_offset = dr.tile(dr.arange(mi.Int32, n_channels), img.shape[0] * img.shape[1])
@@ -31,6 +36,7 @@ def downsample(img):
     return mi.TensorXf(r, img.shape)
 
 def multiscale(img, ref_img, loss_fn=l1, levels=4):
+    """Multiscale loss"""
     loss = loss_fn(img, ref_img)
     for _ in range(levels - 1):
         img = downsample(img)
@@ -39,4 +45,5 @@ def multiscale(img, ref_img, loss_fn=l1, levels=4):
     return loss / levels
 
 def multiscale_l1(img, ref_img, levels=4):
+    """Multiscale L1 loss"""
     return multiscale(img, ref_img, l1, levels)
