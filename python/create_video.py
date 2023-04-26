@@ -1,6 +1,4 @@
-"""This script contains functionality to create a video of the optimization progress of a previously run optimization.
-It does not render any new frames and just uses the frames written out during optimization.
-"""
+"""This script contains functionality to create a video of the optimization progress of a previously run optimization. It does not render any new frames and just uses the frames written out during optimization. """
 
 import argparse
 import glob

@@ -25,7 +25,11 @@ def outer_product(v, w):
 
 
 def bbox_distance_inside(x, bbox):
-    return dr.maximum(0.0, dr.minimum(dr.min(x - bbox.min), dr.min(bbox.max - x)))
+    return dr.maximum(
+        0.0, 
+        dr.minimum(dr.min(x - bbox.min), 
+                   dr.min(bbox.max - x))
+    )
 
 
 def bbox_distance_inside_d(x, bbox):

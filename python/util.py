@@ -84,14 +84,17 @@ def get_file_sensors(fn, resx, resy, indices):
 def get_regular_camera_positions(angle_steps, height_steps, hemisphere=True,
                                  vary_height=True, radius=2.0, angle_shift=0.0,
                                  height_scale=1.0):
+    """Returns a list of camera positions that are regularly spaced on a sphere."""
     min_elevation = 0.1
     max_elevation = 0.9
 
     if height_steps > 1:
         n_sensors = height_steps * angle_steps
         n_angles = n_sensors // height_steps
-        angles, elevation = dr.meshgrid(dr.linspace(mi.Float, 0, 1 - 1 / n_angles, n_angles) * 2 * dr.pi,
-                                        dr.linspace(mi.Float, 1 - max_elevation + 0.5 / height_steps, max_elevation - min_elevation, height_steps) * dr.pi)
+        angles, elevation = dr.meshgrid(
+            dr.linspace(mi.Float, 0, 1 - 1 / n_angles, n_angles) * 2 * dr.pi,
+            dr.linspace(mi.Float, 1 - max_elevation + 0.5 / height_steps, max_elevation - min_elevation, height_steps) * dr.pi
+        )
         if hemisphere:
             elevation = elevation / 2
     else:
@@ -106,8 +109,11 @@ def get_regular_camera_positions(angle_steps, height_steps, hemisphere=True,
         else:
             elevation = mi.Float(1.5)
 
-    origins = mi.Point3f(dr.cos(angles) * dr.sin(elevation) * radius, dr.cos(elevation) *
-                         radius, dr.sin(angles) * dr.sin(elevation) * radius)
+    origins = mi.Point3f(
+        dr.cos(angles) * dr.sin(elevation) * radius, 
+        dr.cos(elevation) * radius, 
+        dr.sin(angles) * dr.sin(elevation) * radius
+    )
     origins = origins + mi.Vector3f(0.5, 0.0, 0.5)
     return origins
 

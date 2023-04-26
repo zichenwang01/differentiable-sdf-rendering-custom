@@ -1,6 +1,4 @@
-"""This file contains a list of "optimization configurations" that can be used to
-optimize a scene. Configurations are dictionaries and support "inheritance" from
-parent configurations.
+"""This file contains a list of "optimization configurations" that can be used to optimize a scene. Configurations are dictionaries and support "inheritance" from parent configurations.
 """
 
 import os

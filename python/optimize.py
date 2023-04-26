@@ -14,9 +14,16 @@ def render_reference_images(scene_config, config, ref_spp=1024, force=False, ver
 
     scene = scene_config.scene
     ref_scene_name = join(SCENE_DIR, scene, f'{scene}.xml')
-    ref_scene = mi.load_file(ref_scene_name, integrator=config.integrator, spp=ref_spp,
-                             sdf_filename='', resx=scene_config.resx, resy=scene_config.resy, **mts_args)
+    ref_scene = mi.load_file(
+        ref_scene_name, 
+        integrator=config.integrator, 
+        spp=ref_spp,
+        sdf_filename='', 
+        resx=scene_config.resx, resy=scene_config.resy, 
+        **mts_args
+    )
     render_folder = join(RENDER_DIR, scene_config.scene, scene_config.name, config.integrator, 'ref')
+    
     os.makedirs(render_folder, exist_ok=True)
     for sensor_idx, sensor in enumerate(scene_config.sensors):
         set_sensor_res(sensor, mi.ScalarVector2i(scene_config.resx, scene_config.resy))
@@ -42,6 +49,9 @@ def copy_reference_images_to_output_dir(scene_config, config, output_dir):
 
 def optimize(scene_name, config, opt_name, output_dir, ref_spp=1024,
              force=False, verbose=False, opt_config_args=None):
+    """Renders reference images and optimizes the SDF for a given scene and config"""
+    """The main optimization function"""
+    
     from opt_configs import get_opt_config
     from shape_opt import optimize_shape
 
@@ -61,17 +71,67 @@ def optimize(scene_name, config, opt_name, output_dir, ref_spp=1024,
 
 
 def main(args):
-    parser = argparse.ArgumentParser(description='''Reconstructs an object as an SDF''')
-    parser.add_argument('scenes', default=None, nargs='*', help='Synthetic reference scenes to optimize')
-    parser.add_argument('--optconfigs', '--opt', nargs='+', help='Optimization configurations to run')
-    parser.add_argument('--outputdir', default=OUTPUT_DIR, help='Specify the output directory. Default: ../outputs')
-    parser.add_argument('--configs', default=['warp'], type=str, nargs='*', help='Method to be used for the optimization. Default: Warp')
-    parser.add_argument('--force', action='store_true', help='Force rendering of reference images')
-    parser.add_argument('--llvm', action='store_true',
-                        help='Force use of LLVM (CPU) mode instead of CUDA/OptiX. This can be useful if compilation times using OptiX are too long.')
-    parser.add_argument('--refspp', type=int, default=2048, help='Number of samples per pixel for reference images. Default: 2048')
-    parser.add_argument('--verbose', action='store_true', help='Print additional log information')
-    parser.add_argument('--print_params', '-pp', action='store_true', help='Print the parameters of the provided scene and exit.')
+    parser = argparse.ArgumentParser(
+        description='''Reconstructs an object as an SDF'''
+    )
+    
+    parser.add_argument(
+        'scenes', 
+        default=None, 
+        nargs='*', 
+        help='Synthetic reference scenes to optimize'
+    )
+    
+    parser.add_argument(
+        '--optconfigs', '--opt', 
+        nargs='+', 
+        help='Optimization configurations to run'
+    )
+    
+    parser.add_argument(
+        '--outputdir', 
+        default=OUTPUT_DIR, 
+        help='Specify the output directory. Default: ../outputs'
+    )
+    
+    parser.add_argument(
+        '--configs', 
+        default=['warp'], 
+        type=str, 
+        nargs='*', 
+        help='Method to be used for the optimization. Default: Warp'
+    )
+    
+    parser.add_argument(
+        '--force', 
+        action='store_true', 
+        help='Force rendering of reference images'
+    )
+    
+    parser.add_argument(
+        '--llvm', 
+        action='store_true',
+        help='Force use of LLVM (CPU) mode instead of CUDA/OptiX. This can be useful if compilation times using OptiX are too long.'
+    )
+    
+    parser.add_argument(
+        '--refspp', 
+        type=int, 
+        default=2048, 
+        help='Number of samples per pixel for reference images. Default: 2048'
+    )
+    
+    parser.add_argument(
+        '--verbose', 
+        action='store_true', 
+        help='Print additional log information'
+    )
+    
+    parser.add_argument(
+        '--print_params', '-pp', 
+        action='store_true', 
+        help='Print the parameters of the provided scene and exit.'
+    )
     args, uargs = parser.parse_known_args(args)
 
     use_llvm = args.llvm or not ('cuda_ad_rgb' in mi.variants())
@@ -95,12 +155,16 @@ def main(args):
                 if args.print_params:
                     opt_config, mts_args = get_opt_config(opt_config, remaining_args)
                     print(f'Mitsuba arguments: {mts_args}')
-                    sdf_scene = mi.load_file(join(SCENE_DIR, scene_name, f'{scene_name}.xml'),
-                                      shape_file='dummysdf.xml', sdf_filename='',
-                                      integrator=config.integrator, **mts_args)
+                    sdf_scene = mi.load_file(
+                        join(SCENE_DIR, scene_name, f'{scene_name}.xml'),
+                        shape_file='dummysdf.xml', 
+                        sdf_filename='',
+                        integrator=config.integrator, **mts_args
+                    )
                     print('Parameters: ', mi.traverse(sdf_scene))
                     continue
 
+                # Run the optimization
                 optimize(scene_name, config, opt_config, args.outputdir, args.refspp, args.force, args.verbose, remaining_args)
 
 

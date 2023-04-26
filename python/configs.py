@@ -30,8 +30,11 @@ class BaseConfig:
         self.warp_weight_strategy = 6
 
     def get_warpfield(self, sdf_object):
-        warp = WarpField2D(sdf_object, weight_strategy=self.warp_weight_strategy,
-                           edge_eps=self.edge_epsilon)
+        warp = WarpField2D(
+            sdf_object, 
+            weight_strategy=self.warp_weight_strategy,
+            edge_eps=self.edge_epsilon
+        )
         warp.clamping_thresh = self.geom_clamp_threshold
         return warp
 
@@ -64,8 +67,11 @@ class WarpPrimary(BaseConfig):
         self.name = 'warpprimary'
 
     def get_warpfield(self, sdf_object):
-        warp = WarpField2D(sdf_object, weight_strategy=self.warp_weight_strategy,
-                           edge_eps=self.edge_epsilon)
+        warp = WarpField2D(
+            sdf_object, 
+            weight_strategy=self.warp_weight_strategy,
+            edge_eps=self.edge_epsilon
+        )
         warp.clamping_thresh = self.geom_clamp_threshold
         warp.max_reparam_depth = 0
         return warp
@@ -107,7 +113,8 @@ class WarpNotNormalized(Warp):
 
 
 class ConvolutionWarp(BaseConfig):
-    """This configuration  implements the Bangaru et al. 2020 reparameterization method"""
+    """This configuration implements the Bangaru et al. 
+        2020 reparameterization method"""
 
     def __init__(self):
         super().__init__()
