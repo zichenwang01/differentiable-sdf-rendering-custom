@@ -3,6 +3,7 @@
 import argparse, os, sys
 from os.path import join
 
+import drjit as dr
 import mitsuba as mi
 
 from constants import OUTPUT_DIR, RENDER_DIR, SCENE_DIR
