@@ -10,6 +10,7 @@ __pycache__/
 env.bak/
 env/
 ENV/
+scenes
 outputs
 outputs_new
 outputs_old
