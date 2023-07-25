@@ -2,19 +2,18 @@
 """
 
 import os
-
 import numpy as np
 import mitsuba as mi
 
-import losses
-from shapes import create_sphere_sdf
-from variables import VolumeVariable, SdfVariable
-from util import get_file_sensors, get_regular_cameras, set_sensor_res, get_regular_cameras_top
-
-import regularizations as reg
-from configs import apply_cmdline_args
-
 from constants import SDF_DEFAULT_KEY
+from configs import apply_cmdline_args
+from variables import VolumeVariable, SdfVariable
+from util import get_file_sensors, get_regular_cameras, \
+                 set_sensor_res, get_regular_cameras_top
+
+import losses
+import regularizations as reg
+from shapes import create_sphere_sdf
 
 
 class SceneConfig:
@@ -98,19 +97,27 @@ class SdfConfig(SceneConfig):
                  param_averaging_beta=0.1,
                  tex_init_value=0.5):
 
-        super().__init__(name, param_keys=param_keys, sensors=sensors, pretty_name=pretty_name, resx=resx, resy=resy,
+        super().__init__(name, param_keys=param_keys, sensors=sensors,      
+                         pretty_name=pretty_name, resx=resx, resy=resy,
                          batch_size=batch_size, reorder_sensors=reorder_sensors,
                          param_averaging_beta=param_averaging_beta)
 
-        sdf = SdfVariable(SDF_DEFAULT_KEY, sdf_res, upsample_iter=upsample_iter,
+        """SDF Variable"""
+        sdf = SdfVariable(SDF_DEFAULT_KEY, sdf_res, 
+                          upsample_iter=upsample_iter,
                           sdf_init_fn=sdf_init_fn, adaptive_learning_rate=adaptive_learning_rate, beta=self.param_averaging_beta,
                           regularizer=sdf_regularizer, regularizer_weight=sdf_regularizer_weight)
-
         self.variables.append(sdf)
+        
+        """Color Variable"""
         if len(param_keys) > 1 and ('reflectance' in param_keys[1] or 'base_color' in param_keys[1]):
-            self.variables.append(VolumeVariable(param_keys[1], (sdf_res, sdf_res, sdf_res, 3),
-                                                init_value=tex_init_value,
-                                                 upsample_iter=tex_upsample_iter, beta=self.param_averaging_beta, lr=texture_lr))
+            self.variables.append(VolumeVariable(
+                param_keys[1], (sdf_res, sdf_res, sdf_res, 3),
+                init_value=tex_init_value,
+                upsample_iter=tex_upsample_iter, 
+                beta=self.param_averaging_beta, 
+                lr=texture_lr
+            ))
 
         if len(param_keys) > 2 and 'roughness' in param_keys[2]:
             self.variables.append(VolumeVariable(param_keys[2], (sdf_res // 4, sdf_res // 4, sdf_res // 4, 1),
@@ -127,7 +134,6 @@ class SdfConfig(SceneConfig):
     def initialize(self, opt, scene):
         if callable(self.sensors):
             self.sensors = self.sensors()
-
         for v in self.variables:
             v.initialize(opt)
         for sensor in self.sensors:
@@ -171,7 +177,10 @@ class SdfConfig(SceneConfig):
 SCENE_CONFIGS = {}
 
 
-def create_scene_config_init_fn(name, config_class, sensors, scene_name=None, resx=128, resy=128, **kwargs):
+def create_scene_config_init_fn(
+    name, config_class, sensors, 
+    scene_name=None, resx=128, resy=128, **kwargs
+):
     if not scene_name:
         scene_name = name
 
@@ -225,6 +234,18 @@ CONFIG_DICTS = [
         'param_keys': [SDF_DEFAULT_KEY],
         'param_averaging_beta': 0.95,
     }, {
+        # use only 1 camera and L2 loss
+        'name': 'no-tex-1',
+        'parent': 'base',
+        'sensors': (get_regular_cameras, 2),
+        'use_multiscale_rendering': False,
+        'loss': losses.l2,
+        # 'render_upsample_iter': [180],
+        'upsample_iter': [64, 128,],
+        'sdf_res': 64,
+        'resx': 128, 'resy': 128,
+        'param_keys': [SDF_DEFAULT_KEY],
+    }, {
         'name': 'no-tex-6',
         'parent': 'base',
         'sensors': (get_regular_cameras, 6),
@@ -239,6 +260,24 @@ CONFIG_DICTS = [
         'parent': 'no-tex-6',
         'use_multiscale_rendering': False,
         'sensors': (get_regular_cameras, 12),
+        'upsample_iter': [64, 128],
+        'batch_size': 6
+    }, {
+        # use L2 loss
+        'name': 'no-tex-12-L2',
+        'parent': 'no-tex-6',
+        'use_multiscale_rendering': False,
+        'sensors': (get_regular_cameras, 12),
+        'loss': losses.l2,
+        'upsample_iter': [64, 128],
+        'batch_size': 6
+    }, {
+        # use L2 loss with two independent rendered iamges
+        'name': 'no-tex-12-Xixi',
+        'parent': 'no-tex-6',
+        'use_multiscale_rendering': False,
+        'sensors': (get_regular_cameras, 12),
+        'loss': losses.l2_xixi,
         'upsample_iter': [64, 128],
         'batch_size': 6
     }, {
@@ -420,10 +459,6 @@ CONFIG_DICTS = [
         'name': 'no-tex-32-hq',
         'parent': 'no-tex-12-hq',
         'sensors': (get_regular_cameras, 32),
-    }, {
-        'name': 'no-tex-1',
-        'parent': 'no-tex-12',
-        'sensors': (get_regular_cameras, 1),
     }, {
         'name': 'no-tex-2',
         'parent': 'no-tex-12',

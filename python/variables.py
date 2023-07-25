@@ -1,21 +1,18 @@
 """Contains logic to initialize, update and read/write optimized variables.
-
 The code base currently only supports volumetric variables, but the interface
 could also be used for other types of variables.
 """
 
 import os
-
+import numpy as np
 import drjit as dr
 import mitsuba as mi
-import numpy as np
 
+from util import atleast_4d
 from shapes import BoxSDF, Grid3d, create_sphere_sdf
 
-import redistancing
-from util import atleast_4d
-
 def upsample_sdf(sdf_data):
+    """Upsamples an SDF by a factor of 2 using linear interpolation"""
     new_res = 2 * mi.ScalarVector3i(sdf_data.shape[:3])
     sdf = Grid3d(sdf_data)
     z, y, x = dr.meshgrid(*[(dr.arange(mi.Int32, new_res[i]) + 0.5) / new_res[i] for i in range(3)], indexing='ij')
@@ -23,9 +20,11 @@ def upsample_sdf(sdf_data):
     return atleast_4d(sdf)
 
 def upsample_grid(data):
+    """Upsamples a grid by a factor of 2 using linear interpolation"""
     return dr.upsample(mi.Texture3f(data, migrate=False), scale_factor=[2, 2, 2, 1]).tensor()
 
 def simple_lr_decay(initial_lrate, decay, i):
+    """Simple learning rate decay for adaptive learning rates"""
     lr = initial_lrate / (1 + decay * i)
 
     # Hardcoded for now: further decay LR as target (512 iterations) is reached
@@ -39,7 +38,11 @@ def simple_lr_decay(initial_lrate, decay, i):
 class Variable:
     """Represents a variable in an optimization that can be initialized, updated and saved"""
 
-    def __init__(self, k, beta=None, regularizer_weight=0.0, regularizer=None, lr=None):
+    def __init__(
+        self, k, beta=None, 
+        regularizer_weight=0.0, regularizer=None, 
+        lr=None
+    ):
         self.k = k
         self.mean = None
         self.beta = beta
@@ -77,7 +80,10 @@ class Variable:
 
 
 class VolumeVariable(Variable):
-    def __init__(self, k, shape, init_value=0.5, upsample_iter=[64, 128], **kwargs):
+    def __init__(
+        self, k, shape, init_value=0.5, 
+        upsample_iter=[64, 128], **kwargs
+    ):
         super().__init__(k, **kwargs)
         self.shape = np.array(shape)
         self.init_value = init_value
@@ -186,6 +192,7 @@ class SdfVariable(VolumeVariable):
             assert sdf.shape == self.bbox_sdf.shape
             sdf = dr.maximum(sdf, self.bbox_sdf)
 
+        import redistancing
         sdf = redistancing.redistance(sdf)
         opt[k] = atleast_4d(mi.TensorXf(sdf))
         dr.enable_grad(opt[k])

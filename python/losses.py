@@ -5,6 +5,10 @@ def l2(img, ref_img):
     """L2 loss"""
     return dr.mean(dr.sqr(img - ref_img))
 
+def l2_xixi(img1, img2, ref_img):
+    """L2 loss using two independent rendered images"""
+    return dr.mean(dr.abs((img1 - ref_img) * (img2 - ref_img)))
+
 def l1(img, ref_img):
     """L1 loss"""
     return dr.mean(dr.abs(img - ref_img))
@@ -47,3 +51,7 @@ def multiscale(img, ref_img, loss_fn=l1, levels=4):
 def multiscale_l1(img, ref_img, levels=4):
     """Multiscale L1 loss"""
     return multiscale(img, ref_img, l1, levels)
+
+def multiscale_l2(img, ref_img, levels=4):
+    """Multiscale L2 loss"""
+    return multiscale(img, ref_img, l2, levels)

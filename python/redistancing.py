@@ -1,7 +1,7 @@
 # import fastsweep
 
 
-def redistance(phi, method='fastsweep'):
+def redistance(phi, method='fmm'):
 
     # if method == 'fastsweep':
         # return fastsweep.redistance(phi)

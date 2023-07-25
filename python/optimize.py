@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
-import argparse, os, sys
-from os.path import join
-
 import drjit as dr
 import mitsuba as mi
+import argparse, os, sys
 
+from os.path import join
 from constants import OUTPUT_DIR, RENDER_DIR, SCENE_DIR
 
-
-def render_reference_images(scene_config, config, ref_spp=1024, force=False, verbose=False, mts_args=None):
-    """Renders reference images for a given scene (if needed)"""
+def render_reference_images(
+    scene_config, config, ref_spp=1024, 
+    force=False, verbose=False, mts_args=None
+):
+    """Renders reference images for a given scene"""
     from util import set_sensor_res
 
     scene = scene_config.scene
@@ -50,8 +51,8 @@ def copy_reference_images_to_output_dir(scene_config, config, output_dir):
 
 def optimize(scene_name, config, opt_name, output_dir, ref_spp=1024,
              force=False, verbose=False, opt_config_args=None):
-    """Renders reference images and optimizes the SDF for a given scene and config"""
     """The main optimization function"""
+    """Renders reference images and optimizes the SDF for a given scene and config"""
     
     from opt_configs import get_opt_config
     from shape_opt import optimize_shape
@@ -72,6 +73,7 @@ def optimize(scene_name, config, opt_name, output_dir, ref_spp=1024,
 
 
 def main(args):
+    """parser"""
     parser = argparse.ArgumentParser(
         description='''Reconstructs an object as an SDF'''
     )
@@ -81,6 +83,14 @@ def main(args):
         default=None, 
         nargs='*', 
         help='Synthetic reference scenes to optimize'
+    )
+    
+    parser.add_argument(
+        '--configs', 
+        default=['warp'], 
+        type=str, 
+        nargs='*', 
+        help='Method to be used for the optimization. Default: Warp'
     )
     
     parser.add_argument(
@@ -96,14 +106,6 @@ def main(args):
     )
     
     parser.add_argument(
-        '--configs', 
-        default=['warp'], 
-        type=str, 
-        nargs='*', 
-        help='Method to be used for the optimization. Default: Warp'
-    )
-    
-    parser.add_argument(
         '--force', 
         action='store_true', 
         help='Force rendering of reference images'
@@ -114,6 +116,7 @@ def main(args):
         action='store_true',
         help='Force use of LLVM (CPU) mode instead of CUDA/OptiX. This can be useful if compilation times using OptiX are too long.'
     )
+    
     
     parser.add_argument(
         '--refspp', 
@@ -133,11 +136,14 @@ def main(args):
         action='store_true', 
         help='Print the parameters of the provided scene and exit.'
     )
+    
     args, uargs = parser.parse_known_args(args)
 
+    """set variant"""
     use_llvm = args.llvm or not ('cuda_ad_rgb' in mi.variants())
     mi.set_variant('llvm_ad_rgb' if use_llvm else 'cuda_ad_rgb')
 
+    """set config"""
     from configs import apply_cmdline_args, get_config
     from opt_configs import is_valid_opt_config, get_opt_config
 

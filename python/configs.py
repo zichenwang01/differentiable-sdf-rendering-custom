@@ -1,17 +1,16 @@
-import inspect
 import sys
+import inspect
 
+import integrators.sdf_direct_reparam
 import integrators.sdf_silhouette_reparam
 import integrators.sdf_simple_shading_reparam
-import integrators.sdf_direct_reparam
 import integrators.sdf_prb_reparam
 
 from warp import WarpField2D, WarpFieldConvolution, DummyWarpField
 
-
 class BaseConfig:
     def __init__(self):
-        self.learning_rate = 4e-2
+        self.learning_rate = 4e-3
         self.n_iter = 512
         self.spp = 64
         self.integrator = 'sdf_direct_reparam'
@@ -45,7 +44,6 @@ class Warp(BaseConfig):
         super().__init__()
         self.pretty_name = 'Ours'
         self.pretty_name_short = 'Ours'
-
         self.name = 'warp'
 
 
@@ -73,7 +71,7 @@ class WarpPrimary(BaseConfig):
             edge_eps=self.edge_epsilon
         )
         warp.clamping_thresh = self.geom_clamp_threshold
-        warp.max_reparam_depth = 0
+        warp.max_reparam_depth = 0 # main difference
         return warp
 
 
@@ -223,7 +221,9 @@ def get_config(config):
 
 def apply_cmdline_args(config, unknown_args, return_dict=False):
     """Update flat dictionnary or object from unparsed argpase arguments"""
-    return_dict |= isinstance(unknown_args, dict)  # Always return a dict if input is a dict
+    # Always return a dict if input is a dict
+    return_dict |= isinstance(unknown_args, dict)  
+    
     unused_args = dict() if return_dict else list()
     if unknown_args is None:
         return unused_args
