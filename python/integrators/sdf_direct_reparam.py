@@ -6,6 +6,7 @@ from .reparam import ReparamIntegrator
 
 
 class SdfDirectReparamIntegrator(ReparamIntegrator):
+    
     def __init__(self, props=mi.Properties()):
         super().__init__(props)
         self.use_aovs = props.get('use_aovs', False)
@@ -17,19 +18,30 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
                δL,  state_in, reparam, active, **kwargs):
 
         active = mi.Mask(active)
+        
         # Reparameterize only if we are not rendering in primal mode
         reparametrize = True and mode != dr.ADMode.Primal
         reparam_primary_ray = True and reparametrize
+        
+        # Compute ray intersection
         si, si_d0, det, extra_output = self.ray_intersect(scene, sampler, ray, depth=0, reparam=reparam_primary_ray)
-        valid_ray = (not self.hide_emitters) and scene.environment() is not None
+        
+        # Compute ray mask
+        valid_ray = (not self.hide_emitters) and \
+                    scene.environment() is not None
         valid_ray |= si.is_valid()
 
+        # Throughput describes 
         throughput = mi.Spectrum(1.0)
-        result = mi.Spectrum(0.0)
         throughput *= det
-        primary_det = det
+        
+        # Result describes the accumulated radiance
+        result = mi.Spectrum(0.0)
         result += throughput * dr.select(active, si.emitter(scene, active).eval(si, active), 0.0)
 
+        primary_det = det
+
+        # Initializez BSDF
         ctx = mi.BSDFContext()
         bsdf = si.shape.bsdf()
 
@@ -49,8 +61,10 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
             shadow_ray = si.spawn_ray_to(ds.p)
 
         shadow_ray.d = dr.detach(shadow_ray.d)
-        occluded, det_e, extra_output_ = self.ray_test(scene, sampler, shadow_ray, depth=1,
-                                                       active=active_e, reparam=reparametrize)
+        occluded, det_e, extra_output_ = self.ray_test(
+            scene, sampler, shadow_ray, depth=1,
+            active=active_e, reparam=reparametrize
+        )
         if not reparam_primary_ray:
             extra_output = extra_output_
         else:
@@ -106,9 +120,10 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
             bsdf_contrib = bsdf_val / bs.pdf * emitter_val * mis_weight(bs.pdf, emitter_pdf)
             result[active] += throughput * bsdf_contrib * det_bsdf
 
-        aovs = [extra_output[k] if (extra_output is not None) and (k in extra_output)
-                else mi.Float(0.0) for k in self.aov_names()]
+        aovs = [extra_output[k] if (extra_output is not None) and (k in extra_output) else mi.Float(0.0) for k in self.aov_names()]
+        
         return dr.select(valid_ray, mi.Spectrum(result), 0.0), valid_ray, primary_det, aovs
 
 
-mi.register_integrator("sdf_direct_reparam", lambda props: SdfDirectReparamIntegrator(props))
+mi.register_integrator("sdf_direct_reparam", 
+                       lambda props: SdfDirectReparamIntegrator(props))

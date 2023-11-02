@@ -35,21 +35,28 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         self.use_optix = True
 
     def prepare(self, sensor, seed, spp, aovs=[]):
+        """prepare film and sampler"""
         film = sensor.film()
+        film_size = film.crop_size()
+        if film.sample_border():
+            film_size += 2 * film.rfilter().border_size()        
+        film.prepare(aovs)
+        
+        wavefront_size = dr.prod(film_size) * spp
+        if dr.is_llvm_v(mi.Float):
+            wavefront_size_limit = 0xffffffff
+        else:
+            wavefront_size_limit = 0x40000000      
+        if wavefront_size > wavefront_size_limit:
+            raise Exception(f"Wavefront {wavefront_size} exceeds {wavefront_size_limit}")
+        
         sampler = sensor.sampler().clone()
         if spp != 0:
             sampler.set_sample_count(spp)
         spp = sampler.sample_count()
         sampler.set_samples_per_wavefront(spp)
-        film_size = film.crop_size()
-        if film.sample_border():
-            film_size += 2 * film.rfilter().border_size()
-        wavefront_size = dr.prod(film_size) * spp
-        wavefront_size_limit = 0xffffffff if dr.is_llvm_v(mi.Float) else 0x40000000
-        if wavefront_size > wavefront_size_limit:
-            raise Exception(f"Wavefront {wavefront_size} exceeds {wavefront_size_limit}")
         sampler.seed(seed, wavefront_size)
-        film.prepare(aovs)
+        
         return sampler, spp
 
 
@@ -60,9 +67,6 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         if self.sdf is None:
             self.is_prepared = True
             return
-
-        # Disable optix if there is only a single shape that is an SDF
-        # self.use_optix = self.force_optix or any(not s.is_sdf() for s in scene.shapes())
 
         # Enable optix if we detect that there is more than just one shape
         self.use_optix = self.force_optix or len(scene.shapes()) > 1
@@ -79,20 +83,31 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         dr.eval(self.sdf_shape)
         self.is_prepared = True
 
-    def eval_sample(self, mode, scene, sensor, sampler, block, _aovs, position_sample, diff_scale_factor, active=mi.Bool(True)):
+    def eval_sample(
+        self, mode, scene, sensor, sampler, block, _aovs, 
+        position_scaled, spp, active=mi.Bool(True)
+    ):
+        # Aperture sample for depth of field
         aperture_sample = mi.Point2f(0.5)
         if sensor.needs_aperture_sample():
             aperture_sample = sampler.next_2d(active)
+            
+        # Shutter open time
         time = sensor.shutter_open()
         if sensor.shutter_open_time() > 0:
             time += sampler.next_1d(active) * sensor.shutter_open_time()
 
+        # Wavelength sample of continuous spectrum
         wavelength_sample = sampler.next_1d(active)
-        crop_offset = sensor.film().crop_offset()
-        crop_size = mi.Vector2f(sensor.film().crop_size())
-        adjusted_position = (position_sample - crop_offset) / crop_size
-        ray, ray_weight = sensor.sample_ray_differential(time, wavelength_sample, adjusted_position, aperture_sample)
+        
+        # sample a batch of rays
+        ray, ray_weight = sensor.sample_ray_differential(time, wavelength_sample, position_scaled, aperture_sample)
+        
+        # scale the ray differentials
+        diff_scale_factor = dr.rsqrt(mi.ScalarFloat(spp))
         ray.scale_differential(diff_scale_factor)
+        
+        # evaluate ray contribution
         rgb, valid_ray, det, aovs_ = self.sample(mode, scene, sampler, ray,
                                                  None, None, None, active)
 
@@ -105,6 +120,7 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         position_sample = ds.uv
         rgb = ray_weight * rgb
 
+        # put RGB values in the block
         has_alpha_channel = block.channel_count() == 5 + len(aovs_)
         aovs = [None] * 3
         aovs[0] = rgb.x
@@ -117,35 +133,44 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         aovs = aovs + aovs_
         block.put(position_sample, aovs, active)
 
-    def render(self, scene, sensor=0, seed=0,
-               spp=0, develop=True, evaluate=True, mode=dr.ADMode.Primal):
+    def render(
+        self, scene, sensor=0, seed=0,
+        spp=0, develop=True, evaluate=True,
+        mode=dr.ADMode.Primal
+    ):
         if not develop:
             raise Exception("Must use develop=True for this AD integrator")
-        self.prepare_sdf(scene)
 
+        # load sensor
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
         # prepare film and sampler
         sampler, spp = self.prepare(sensor=sensor, seed=seed, spp=spp, aovs=self.aov_names())
 
-        # Logic to sample pixel indices
+        # prepare SDF
+        self.prepare_sdf(scene)
+
+        # print("finish preparing")
+
+        # get film parameters
         film = sensor.film()
         film_size = film.crop_size()
         rfilter = film.rfilter()
         border_size = rfilter.border_size()
         if film.sample_border():
-            film_size += 2 * border_size
-
+            film_size += 2 * border_size        
         spp = sampler.sample_count()
+        
+        # Compute the pixel index
         idx = dr.arange(mi.UInt32, dr.prod(film_size) * spp)
-
         # Avoid division if spp is a power of 2
         log_spp = dr.log2i(spp)
         if 1 << log_spp == spp:
             idx >>= dr.opaque(mi.UInt32, log_spp)
         else:
             idx //= dr.opaque(mi.UInt32, spp)
+            
         # Compute the position on the image plane
         pos = mi.Vector2i()
         pos.y = idx // film_size[0]
@@ -153,30 +178,43 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         if film.sample_border():
             pos -= border_size
         pos += mi.Vector2i(film.crop_offset())
-        # Done generating pixel indices
 
-        # Sample film positions and subsequently accumulate actual light paths
+        # Compute the random offset within the pixel
+        offset = sampler.next_2d()
+
+        # Compute the sample position on the image plane
+        position_sample = pos + offset
+        if self.antithetic_sampling:
+            position_sample2 = pos - offset + 1.0
+            sampler2 = sampler.clone()
+
+        # Rescale the sample position in [0, 1]^2
+        crop_offset = sensor.film().crop_offset()
+        crop_size = mi.Vector2f(sensor.film().crop_size())
+        position_scaled = (position_sample - crop_offset) / crop_size
+        if self.antithetic_sampling:
+            position_scaled2 = (position_sample2 - crop_offset) / crop_size
+
+        # initialize film block
         block = sensor.film().create_block()
         _aovs = [None] * len(self.aov_names())
-        diff_scale_factor = dr.rsqrt(mi.ScalarFloat(spp))
-
+        
         # If we ask for AOVs, reparameterize also in forward pass to get values
         if self.warp_field is not None and self.warp_field.return_aovs:
             mode = dr.ADMode.Forward
 
-        # Generate light paths, potentially apply antithetic sampling at the pixel itself
-        # (disabled by default, but used in evaluation)
+        # print("eval_sample")
+
+        # sample and evaluate light path 
         active = mi.Bool(True)
-        r = sampler.next_2d(active)
-        position_sample = pos + r
-        if self.antithetic_sampling:
-            position_sample2 = pos - r + 1.0
-            sampler2 = sampler.clone()
-        self.eval_sample(mode, scene, sensor, sampler, block, _aovs, position_sample, diff_scale_factor, active)
+        self.eval_sample(mode, scene, sensor, sampler, block, _aovs, 
+                         position_scaled, spp, active)
         # Antithetic sample: mirrored
         if self.antithetic_sampling:
-            self.eval_sample(mode, scene, sensor, sampler2, block, _aovs, position_sample2, diff_scale_factor, active)
+            self.eval_sample(mode, scene, sensor, sampler2, block, _aovs, 
+                             position_scaled2, spp, active)
 
+        # collect garbage
         gc.collect()
 
         # Develop the film given the block

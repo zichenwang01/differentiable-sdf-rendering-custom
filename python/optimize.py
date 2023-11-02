@@ -68,6 +68,8 @@ def optimize(scene_name, config, opt_name, output_dir, ref_spp=1024,
     render_reference_images(opt_config, config, ref_spp=ref_spp, force=force, verbose=verbose, mts_args=mts_args)
     ref_image_paths = copy_reference_images_to_output_dir(opt_config, config, current_output_dir)
 
+    # print("start opt shape")
+
     # 2. Optimize SDF compared to ref image(s)
     optimize_shape(opt_config, mts_args, ref_image_paths, current_output_dir, config)
 

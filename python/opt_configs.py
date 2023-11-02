@@ -271,6 +271,24 @@ CONFIG_DICTS = [
         'loss': losses.l2,
         'upsample_iter': [64, 128],
         'batch_size': 6
+    },  {
+        # use L2 loss
+        'name': 'no-tex-12-MultiScaleL2',
+        'parent': 'no-tex-6',
+        'use_multiscale_rendering': False,
+        'sensors': (get_regular_cameras, 12),
+        'loss': losses.multiscale_l2,
+        'upsample_iter': [64, 128],
+        'batch_size': 6
+    }, {
+        # use L2 loss
+        'name': 'no-tex-12-L1',
+        'parent': 'no-tex-6',
+        'use_multiscale_rendering': False,
+        'sensors': (get_regular_cameras, 12),
+        'loss': losses.l1,
+        'upsample_iter': [64, 128],
+        'batch_size': 6
     }, {
         # use L2 loss with two independent rendered iamges
         'name': 'no-tex-12-Xixi',

@@ -50,9 +50,12 @@ class WarpField2D:
 
         active = mi.Mask(active)
         active &= dr.isfinite(t)
+        
+        # compute sdf and sdf gradient
         sdf_value, _, sdf_normal, sdf_normal_d, h_mat = self.sdf.eval_all(x)
         h_mat = dr.detach(h_mat, True)
 
+        # compute the warp field V(x)
         if self.normalize_warp_field:
             sdf_normal_d_n, norm_jac = normalize_sqr(sdf_normal_d)
             warp = -sdf_normal_d_n * sdf_value
@@ -65,8 +68,10 @@ class WarpField2D:
         # Apply weighting of the warp field itself
         x = dr.detach(x, True)
         d = dr.detach(ray_d, True)
-        weight, weight_grad, edge_eps_grad = self.weight(x, d, dr.detach(sdf_value),
-                                                         dr.detach(sdf_normal), self.weight_epsilon(t))
+        weight, weight_grad, edge_eps_grad = self.weight(
+            x, d, dr.detach(sdf_value),
+            dr.detach(sdf_normal), self.weight_epsilon(t)
+        )
         weight_grad += edge_eps_grad * ray_d * self.edge_eps
         if warp_weight is not None:
             assert warp_weight_d is not None
@@ -96,26 +101,39 @@ class WarpField2D:
         return warp, div
 
 
-    def ray_intersect(self, sdf_shape, sampler, ray, depth=0, ray_test=False, reparam=True, active=True):
+    def ray_intersect(
+        self, sdf_shape, sampler, ray, depth=0, 
+        ray_test=False, reparam=True, active=True
+    ):
         active = mi.Mask(active)
         extra_output = {}
 
+        # check if we need to reparametrize
         reparam = reparam and ((self.max_reparam_depth < 0) or (depth <= self.max_reparam_depth))
+        
+        # pass to sdf ray_intersect
         with dr.suspend_grad():
-            its_result = self.sdf.ray_intersect(dr.detach(ray), warp=self, active=active,
-                                                extra_outputs=extra_output if (reparam and self.return_aovs) else None)
+            its_result = self.sdf.ray_intersect(
+                dr.detach(ray), warp=self, active=active,
+                extra_outputs=extra_output if (reparam and self.return_aovs) 
+                                           else None
+                )
             its_t, warp_t, warp_t_d, warp_weight, warp_weight_d = its_result
 
+        # compute warp field and divergence
         div = mi.Float(1.0)
         if reparam:
             warp, div = self.eval(ray(warp_t), ray.d, t=warp_t, dt_dx=warp_t_d,
                                   active=active, extra_output=extra_output,
                                   warp_weight=warp_weight, warp_weight_d=warp_weight_d)
+            # replace ray direction grad with warp field grad
             ray.d = dr.replace_grad(mi.Vector3f(ray.d), warp)
             div = dr.replace_grad(mi.Float(1.0), div)
+            
         if ray_test:
             return dr.isfinite(its_t), div, extra_output
         else:
+            # compute intersection
             si = self.sdf.compute_surface_interaction(ray, its_t)
             si.shape = sdf_shape
             si_d = self.sdf.compute_surface_interaction(dr.detach(ray), dr.detach(its_t))
@@ -151,9 +169,11 @@ class WarpFieldConvolution:
         if reparam:
             # TODO: do we need to pass other parameters here too? not really it seems?
             params = {'sdf.p': self.sdf.p}
-            new_d, div = reparameterize_ray(self.sdf, sampler, ray, params=params,
-                                            num_auxiliary_rays=self.n_aux_rays, kappa=self.kappa,
-                                            power=self.power, active=active)
+            new_d, div = reparameterize_ray(
+                self.sdf, sampler, ray, params=params,
+                num_auxiliary_rays=self.n_aux_rays, kappa=self.kappa,
+                power=self.power, active=active
+            )
             ray.d[active] = new_d
             div = dr.replace_grad(mi.Float(1.0), div)
         if ray_test:

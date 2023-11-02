@@ -10,7 +10,7 @@ from warp import WarpField2D, WarpFieldConvolution, DummyWarpField
 
 class BaseConfig:
     def __init__(self):
-        self.learning_rate = 4e-3
+        self.learning_rate = 4e-2
         self.n_iter = 512
         self.spp = 64
         self.integrator = 'sdf_direct_reparam'

@@ -42,23 +42,30 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
     ref_scene_name = join(SCENE_DIR, scene_name, f'{scene_name}.xml')
     ref_images = load_ref_images(ref_image_paths, True)
 
+    # print("load reference images")
+
     # Load scene, currently handle SDF shape separately from Mitsuba scene
     sdf_scene = mi.load_file(
         ref_scene_name, 
         shape_file='dummysdf.xml', # load initial sphere
-        sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_64.vol'),
+        sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_opt_255.vol'),
         integrator=config.integrator, # load custom integrator
         resx=scene_config.resx, resy=scene_config.resy, 
         **mts_args
     )
+    # print("load sdf scene")
     sdf_object = sdf_scene.integrator().sdf
     sdf_scene.integrator().warp_field = config.get_warpfield(sdf_object)
+
+    # print("load sdf scene")
 
     # Check SDF placeholder
     params = mi.traverse(sdf_scene)
     assert any('_sdf_' in shape.id() for shape in sdf_scene.shapes()), \
            "Could not find a placeholder shape for the SDF"
     params.keep(scene_config.param_keys)
+
+    # print("start optimization")
 
     # Initialize optimizer
     opt = mi.ad.Adam(lr=config.learning_rate, params=params, mask_updates=config.mask_optimizer)

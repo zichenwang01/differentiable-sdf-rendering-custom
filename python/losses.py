@@ -42,7 +42,7 @@ def downsample(img):
 def multiscale(img, ref_img, loss_fn=l1, levels=4):
     """Multiscale loss"""
     loss = loss_fn(img, ref_img)
-    for _ in range(levels - 1):
+    for i in range(levels - 1):
         img = downsample(img)
         ref_img = downsample(ref_img)
         loss += loss_fn(img, ref_img)
