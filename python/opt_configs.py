@@ -77,25 +77,16 @@ class SceneConfig:
 
 
 class SdfConfig(SceneConfig):
-    def __init__(self, name, param_keys=[SDF_DEFAULT_KEY],
-                 sensors=[0, 1, 2],
-                 pretty_name=None,
-                 sdf_res=64,
-                 sdf_init_fn=create_sphere_sdf,
-                 resx=64, resy=64,
-                 upsample_iter=[64, 128],
-                 loss=losses.l1,
-                 use_multiscale_rendering=False,
-                 render_upsample_iter=[64, 128],
-                 sdf_regularizer_weight=0.0,
-                 sdf_regularizer=None,
-                 batch_size=None,
-                 adaptive_learning_rate=True,
-                 tex_upsample_iter=[100, 128, 160, 170, 192],
-                 reorder_sensors=True,
-                 texture_lr=None,
-                 param_averaging_beta=0.1,
-                 tex_init_value=0.5):
+    def __init__(
+        self, name, param_keys=[SDF_DEFAULT_KEY], sensors=[0, 1, 2],
+        pretty_name=None, sdf_res=64, sdf_init_fn=create_sphere_sdf,
+        resx=64, resy=64, upsample_iter=[64, 128], loss=losses.l1,
+        use_multiscale_rendering=False, render_upsample_iter=[64, 128],
+        sdf_regularizer_weight=0.0, sdf_regularizer=None,
+        batch_size=None, adaptive_learning_rate=True,
+        tex_upsample_iter=[100, 128, 160, 170, 192], reorder_sensors=True,
+        texture_lr=None, param_averaging_beta=0.1, tex_init_value=0.5
+    ):
 
         super().__init__(name, param_keys=param_keys, sensors=sensors,      
                          pretty_name=pretty_name, resx=resx, resy=resy,
@@ -220,8 +211,7 @@ def process_config_dicts(configs):
 
 
 CONFIG_DICTS = [
-    {
-        # Some common settings for all experiments
+    {   # base
         'name': 'base',
         'config_class': SdfConfig,
         'sensors': (get_regular_cameras, 6),
@@ -232,20 +222,62 @@ CONFIG_DICTS = [
         'sdf_res': 64,
         'resx': 128, 'resy': 128,
         'param_keys': [SDF_DEFAULT_KEY],
-        'param_averaging_beta': 0.95,
-    }, {
-        # use only 1 camera and L2 loss
-        'name': 'no-tex-1',
+        'param_averaging_beta': 0.95, 
+    }, 
+
+    {   # no texture; 2 camera; l1 loss
+        'name': 'notex-2camera-l1loss',
         'parent': 'base',
         'sensors': (get_regular_cameras, 2),
         'use_multiscale_rendering': False,
-        'loss': losses.l2,
-        # 'render_upsample_iter': [180],
+        'loss': losses.l1,
+        'render_upsample_iter': [180],
         'upsample_iter': [64, 128,],
         'sdf_res': 64,
         'resx': 128, 'resy': 128,
         'param_keys': [SDF_DEFAULT_KEY],
-    }, {
+    }, 
+    
+    {   # no texture; 2 camera; l1 multiscale loss
+        'name': 'notex-2camera-l1multiscaleloss',
+        'parent': 'base',
+        'sensors': (get_regular_cameras, 2),
+        'use_multiscale_rendering': False,
+        'loss': losses.multiscale_l1,
+        'render_upsample_iter': [180],
+        'upsample_iter': [64, 128,],
+        'sdf_res': 64,
+        'resx': 128, 'resy': 128,
+        'param_keys': [SDF_DEFAULT_KEY],
+    }, 
+    
+    {   # no texture; 2 camera; l2 loss
+        'name': 'notex-2camera-l2loss',
+        'parent': 'base',
+        'sensors': (get_regular_cameras, 2),
+        'use_multiscale_rendering': False,
+        'loss': losses.l2,
+        'render_upsample_iter': [180],
+        'upsample_iter': [64, 128,],
+        'sdf_res': 64,
+        'resx': 128, 'resy': 128,
+        'param_keys': [SDF_DEFAULT_KEY],
+    }, 
+
+    {   # no texture; 6 cameras; l1 loss
+        'name': 'notex-6camera-l1loss',
+        'parent': 'base',
+        'sensors': (get_regular_cameras, 6),
+        'loss': losses.l1,
+        'use_multiscale_rendering': True,
+        'render_upsample_iter': [180],
+        'upsample_iter': [64, 128, 180],
+        'sdf_res': 64,
+        'resx': 128, 'resy': 128,
+        'param_keys': [SDF_DEFAULT_KEY],
+    }, 
+    
+    {   # no texture; 6 cameras; l1 multiscale loss
         'name': 'no-tex-6',
         'parent': 'base',
         'sensors': (get_regular_cameras, 6),
@@ -255,14 +287,31 @@ CONFIG_DICTS = [
         'sdf_res': 64,
         'resx': 128, 'resy': 128,
         'param_keys': [SDF_DEFAULT_KEY],
-    }, {
+    }, 
+    
+    {   # no texture; 6 cameras; l2 loss
+        'name': 'notex-6camera-l2loss',
+        'parent': 'base',
+        'sensors': (get_regular_cameras, 6),
+        'loss': losses.l2,
+        'use_multiscale_rendering': True,
+        'render_upsample_iter': [180],
+        'upsample_iter': [64, 128, 180],
+        'sdf_res': 64,
+        'resx': 128, 'resy': 128,
+        'param_keys': [SDF_DEFAULT_KEY],
+    }, 
+    
+    {
         'name': 'no-tex-12',
         'parent': 'no-tex-6',
         'use_multiscale_rendering': False,
         'sensors': (get_regular_cameras, 12),
         'upsample_iter': [64, 128],
         'batch_size': 6
-    }, {
+    }, 
+    
+    {
         # use L2 loss
         'name': 'no-tex-12-L2',
         'parent': 'no-tex-6',
@@ -271,7 +320,9 @@ CONFIG_DICTS = [
         'loss': losses.l2,
         'upsample_iter': [64, 128],
         'batch_size': 6
-    },  {
+    },  
+    
+    {
         # use L2 loss
         'name': 'no-tex-12-MultiScaleL2',
         'parent': 'no-tex-6',
@@ -280,7 +331,9 @@ CONFIG_DICTS = [
         'loss': losses.multiscale_l2,
         'upsample_iter': [64, 128],
         'batch_size': 6
-    }, {
+    }, 
+    
+    {
         # use L2 loss
         'name': 'no-tex-12-L1',
         'parent': 'no-tex-6',
@@ -289,7 +342,9 @@ CONFIG_DICTS = [
         'loss': losses.l1,
         'upsample_iter': [64, 128],
         'batch_size': 6
-    }, {
+    }, 
+    
+    {
         # use L2 loss with two independent rendered iamges
         'name': 'no-tex-12-Xixi',
         'parent': 'no-tex-6',
@@ -298,7 +353,9 @@ CONFIG_DICTS = [
         'loss': losses.l2_xixi,
         'upsample_iter': [64, 128],
         'batch_size': 6
-    }, {
+    }, 
+    
+    {
         'name': 'torus-shadow-1',
         'parent': 'no-tex-12',
         'scene_name': 'torus-shadow',
@@ -308,7 +365,9 @@ CONFIG_DICTS = [
         'sdf_res': 128,
         'resx': 256, 'resy': 256,
         'sensors': [0] # Use one sensor that is directly from the scene
-    }, {
+    }, 
+    
+    {
         'name': 'mirror-opt-1',
         'parent': 'no-tex-12',
         'scene_name': 'mirror-opt',
@@ -316,7 +375,9 @@ CONFIG_DICTS = [
         'sdf_res': 64,
         'resx': 128, 'resy': 128,
         'sensors': [0]
-    }, {
+    }, 
+    
+    {
         'name': 'mirror-opt-hq',
         'parent': 'no-tex-12',
         'scene_name': 'mirror-opt',
@@ -326,11 +387,15 @@ CONFIG_DICTS = [
         'sdf_res': 128,
         'resx': 256, 'resy': 256,
         'sensors': [0]
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-3',
         'parent': 'no-tex-6',
         'sensors': (get_regular_cameras, 3)
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-6',
         'parent': 'base',
         'sensors': (get_regular_cameras, 6),
@@ -339,23 +404,31 @@ CONFIG_DICTS = [
         'sdf_res': 64,
         'resx': 128, 'resy': 128,
         'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.reflectance.volume.data']
-    }, {
+    }, 
+    
+    {
         'name': 'principled-6',
         'parent': 'diffuse-6',
         'use_multiscale_rendering': False,
         'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.base_color.volume.data', 'main-bsdf.roughness.volume.data']
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-12',
         'parent': 'diffuse-6',
         'sensors': (get_regular_cameras, 12),
         'batch_size': 6,
-    }, {
+    }, 
+    
+    {
         'name': 'principled-12',
         'parent': 'principled-6',
         'sensors': (get_regular_cameras, 12),
         'batch_size': 6,
         'upsample_iter': [128, 180]
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-12-hq',
         'parent': 'diffuse-12',
         'use_multiscale_rendering': True,
@@ -363,7 +436,9 @@ CONFIG_DICTS = [
         'upsample_iter': [128, 180, 220],
         'sdf_res': 128,
         'resx': 256, 'resy': 256,
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-12-hqq',
         'parent': 'diffuse-12',
         'use_multiscale_rendering': True,
@@ -371,19 +446,27 @@ CONFIG_DICTS = [
         'upsample_iter': [128, 180, 220, 270],
         'sdf_res': 256,
         'resx': 512, 'resy': 512,
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-16-hq',
         'parent': 'diffuse-12-hq',
         'sensors': (get_regular_cameras, 16),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-20-hq',
         'parent': 'diffuse-12-hq',
         'sensors': (get_regular_cameras, 20),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-32-hq',
         'parent': 'diffuse-12-hq',
         'sensors': (get_regular_cameras, 32),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-32-hqq-2',
         'parent': 'diffuse-12-hq',
         'sensors': (get_regular_cameras, 32),
@@ -392,23 +475,33 @@ CONFIG_DICTS = [
         'upsample_iter': [128, 180, 220, 450],
         'sdf_res': 256,
         'resx': 512, 'resy': 512,
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-40-hq',
         'parent': 'diffuse-12-hq',
         'sensors': (get_regular_cameras, 40),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-64-hq',
         'parent': 'diffuse-12-hq',
         'sensors': (get_regular_cameras, 40),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-24-hq',
         'parent': 'diffuse-12-hq',
         'sensors': (get_regular_cameras, 24),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-16-top-hq',
         'parent': 'diffuse-12-hq',
         'sensors': (get_regular_cameras_top, 16),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-16-hqq',
         'parent': 'diffuse-12-hqq',
         'sensors': (get_regular_cameras, 16),
@@ -416,23 +509,33 @@ CONFIG_DICTS = [
         'name': 'diffuse-24-hqq',
         'parent': 'diffuse-12-hqq',
         'sensors': (get_regular_cameras, 24),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-40-hqq',
         'parent': 'diffuse-12-hqq',
         'sensors': (get_regular_cameras, 40),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-48-hqq',
         'parent': 'diffuse-12-hqq',
         'sensors': (get_regular_cameras, 48),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-64-hqq',
         'parent': 'diffuse-12-hqq',
         'sensors': (get_regular_cameras, 64),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-16-top-hqq',
         'parent': 'diffuse-12-hqq',
         'sensors': (get_regular_cameras_top, 16),
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-16-hqq-2',
         'parent': 'diffuse-12-hqq',
         'render_upsample_iter': [300],
@@ -441,15 +544,21 @@ CONFIG_DICTS = [
         'sdf_regularizer_weight': 1e-4,
         'sdf_regularizer': reg.eval_discrete_laplacian_reg,
         'upsample_iter': [150, 180],
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-32-hqq',
         'parent': 'diffuse-16-hqq',
         'sensors': (get_regular_cameras, 32)
-    }, {
+    }, 
+    
+    {
         'name': 'diffuse-32-top-hqq',
         'parent': 'diffuse-16-hqq',
         'sensors': (get_regular_cameras_top, 32)
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-12-hq',
         'parent': 'no-tex-12',
         'use_multiscale_rendering': True,
@@ -457,48 +566,70 @@ CONFIG_DICTS = [
         'upsample_iter': [128, 180, 220],
         'sdf_res': 128,
         'resx': 256, 'resy': 256,
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-1-hq',
         'parent': 'no-tex-12-hq',
         'sensors': (get_regular_cameras, 1),
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-2-hq',
         'parent': 'no-tex-12-hq',
         'sensors': (get_regular_cameras, 2),
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-3-hq',
         'parent': 'no-tex-12-hq',
         'sensors': (get_regular_cameras, 3),
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-6-hq',
         'parent': 'no-tex-12-hq',
         'sensors': (get_regular_cameras, 6),
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-32-hq',
         'parent': 'no-tex-12-hq',
         'sensors': (get_regular_cameras, 32),
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-2',
         'parent': 'no-tex-12',
         'sensors': (get_regular_cameras, 2),
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-32',
         'parent': 'no-tex-12',
         'sensors': (get_regular_cameras, 32),
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-32-hq-l1',
         'parent': 'no-tex-32-hq',
         'loss': losses.l1
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-32-hq-mape',
         'parent': 'no-tex-32-hq',
         'loss': losses.mape
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-32-hq-no-reg',
         'parent': 'no-tex-32-hq',
         'sdf_regularizer_weight': 0.0,
         'loss': losses.l1
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-6-hqq',
         'parent': 'no-tex-6',
         'use_multiscale_rendering': True,
@@ -506,7 +637,9 @@ CONFIG_DICTS = [
         'upsample_iter': [128, 180, 220, 270],
         'sdf_res': 256,
         'resx': 512, 'resy': 512,
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-12-hqq',
         'parent': 'no-tex-12',
         'use_multiscale_rendering': True,
@@ -514,11 +647,15 @@ CONFIG_DICTS = [
         'upsample_iter': [128, 180, 220, 270],
         'sdf_res': 256,
         'resx': 512, 'resy': 512,
-    }, {
+    }, 
+    
+    {
         'name': 'no-tex-32-hqq',
         'parent': 'no-tex-12-hqq',
         'sensors': (get_regular_cameras, 32),
-    }, {
+    }, 
+    
+    {
         'name': 'principled-12-hq',
         'parent': 'principled-12',
         'use_multiscale_rendering': True,
@@ -526,7 +663,9 @@ CONFIG_DICTS = [
         'upsample_iter': [128, 180, 220],
         'sdf_res': 128,
         'resx': 256, 'resy': 256,
-    }, {
+    }, 
+    
+    {
         'name': 'principled-12-hqq',
         'parent': 'principled-12',
         'use_multiscale_rendering': True,
@@ -534,27 +673,39 @@ CONFIG_DICTS = [
         'upsample_iter': [128, 180, 220, 270],
         'sdf_res': 256,
         'resx': 512, 'resy': 512,
-    }, {
+    }, 
+    
+    {
         'name': 'principled-16-hq',
         'parent': 'principled-12-hq',
         'sensors': (get_regular_cameras, 16),
-    }, {
+    }, 
+    
+    {
         'name': 'principled-16-hqq',
         'parent': 'principled-12-hqq',
         'sensors': (get_regular_cameras, 16),
-    }, {
+    }, 
+    
+    {
         'name': 'principled-32-hq',
         'parent': 'principled-16-hq',
         'sensors': (get_regular_cameras, 32)
-    }, {
+    }, 
+    
+    {
         'name': 'principled-32-hqq',
         'parent': 'principled-16-hqq',
         'sensors': (get_regular_cameras, 32)
-    }, {
+    }, 
+    
+    {
         'name': 'principled-48-hqq',
         'parent': 'principled-16-hqq',
         'sensors': (get_regular_cameras, 48)
-    }, {
+    }, 
+    
+    {
         'name': 'principled-64-hqq',
         'parent': 'principled-16-hqq',
         'sensors': (get_regular_cameras, 64)
@@ -593,8 +744,8 @@ del fn, name
 
 
 def is_valid_opt_config(scene):
+    """Checks if is a valid optimization config"""
     return scene in SCENE_CONFIGS
-
 
 def get_opt_config(scene, cmd_args=None):
     """Retrieve configuration options associated with a given scene"""

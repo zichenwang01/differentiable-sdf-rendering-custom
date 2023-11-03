@@ -10,21 +10,24 @@ from warp import WarpField2D, WarpFieldConvolution, DummyWarpField
 
 class BaseConfig:
     def __init__(self):
+        # general parameters
+        self.name = 'default'
+        self.pretty_name = 'baseconfig'
+        self.mask_optimizer = False
+        self.use_autodiff = True
+        self.use_finite_differences = False
+        
+        # optimization parameters
         self.learning_rate = 4e-2
         self.n_iter = 512
         self.spp = 64
         self.integrator = 'sdf_direct_reparam'
-        self.use_autodiff = True
+        
         self.primal_spp_mult = 4
-
         self.edge_epsilon = 0.01
         self.refined_intersection = False
-        self.pretty_name = 'baseconfig'
-        self.name = 'default'
-        self.use_finite_differences = False
-        self.mask_optimizer = False
-
-        # Clamp the geometry terms used in the reparameterization to avoid extreme outliers
+        
+        # clamp parameters
         self.geom_clamp_threshold = 0.05
         self.warp_weight_strategy = 6
 
@@ -39,7 +42,9 @@ class BaseConfig:
 
 
 class Warp(BaseConfig):
-    """This configuration is our main method"""
+    """ Our main method.
+        This handles both primary and secondary rays (check this)"""
+    
     def __init__(self):
         super().__init__()
         self.pretty_name = 'Ours'
@@ -48,7 +53,9 @@ class Warp(BaseConfig):
 
 
 class WarpPRB(BaseConfig):
-    """Our method + path replay to optimize accounting for indirect illumination"""
+    """ Our method implemented with path replay.
+        This handles both primary and secondary rays """
+        
     def __init__(self):
         super().__init__()
         self.pretty_name = 'Ours'
@@ -58,6 +65,9 @@ class WarpPRB(BaseConfig):
 
 
 class WarpPrimary(BaseConfig):
+    """ Our method.
+        This handles only primary rays """
+    
     def __init__(self):
         super().__init__()
         self.pretty_name = 'Ours (primary only)'
@@ -76,7 +86,8 @@ class WarpPrimary(BaseConfig):
 
 
 class WarpPRBPrimary(BaseConfig):
-    """Path tracing renderer that only does not compute non-primary gradients"""
+    """ Our method implemented with path replay
+        This handles only primary rays """
 
     def __init__(self):
         super().__init__()
@@ -94,7 +105,9 @@ class WarpPRBPrimary(BaseConfig):
 
 
 class WarpNotNormalized(Warp):
-    """This configuration is used for a figure in the paper"""
+    """ Our method without normalization of the warp field.
+        This is used for a figure in the paper."""
+        
     def __init__(self):
         super().__init__()
         self.pretty_name = 'Ours (not normalized)'
@@ -111,8 +124,8 @@ class WarpNotNormalized(Warp):
 
 
 class ConvolutionWarp(BaseConfig):
-    """This configuration implements the Bangaru et al. 
-        2020 reparameterization method"""
+    """ Warp Field method [Bangaru 2020]
+        Deafult 16 auxiliary rays"""
 
     def __init__(self):
         super().__init__()
@@ -180,8 +193,8 @@ class ConvolutionWarp32(BaseConfig):
 
 
 class OnlyShadingGrad(BaseConfig):
-    """This configuration completely ignores discontinuities, which
-    usually breaks optimization."""
+    """ Naive autodiff method.
+        This completely ignores discontinuities, which usually breaks optimization."""
     def __init__(self):
         super().__init__()
         self.pretty_name = 'Only shading gradient'
@@ -193,9 +206,8 @@ class OnlyShadingGrad(BaseConfig):
 
 
 class FiniteDifferences(BaseConfig):
-    """Finite differences method that is used for some figures. This cannot
-    really be used for any optimizations and is only useful for gradient
-    validation."""
+    """ Finite differences method. 
+        This cannot really be used for any optimizations and is only useful for gradient validation."""
     def __init__(self):
         super().__init__()
         self.pretty_name = 'Finite differences'
@@ -221,6 +233,7 @@ def get_config(config):
 
 def apply_cmdline_args(config, unknown_args, return_dict=False):
     """Update flat dictionnary or object from unparsed argpase arguments"""
+    
     # Always return a dict if input is a dict
     return_dict |= isinstance(unknown_args, dict)  
     

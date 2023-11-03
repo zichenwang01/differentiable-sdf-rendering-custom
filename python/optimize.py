@@ -91,13 +91,13 @@ def main(args):
         '--configs', 
         default=['warp'], 
         type=str, 
-        nargs='*', 
+        nargs='*', # zero or more arguments
         help='Method to be used for the optimization. Default: Warp'
     )
     
     parser.add_argument(
         '--optconfigs', '--opt', 
-        nargs='+', 
+        nargs='+', # one or more arguments
         help='Optimization configurations to run'
     )
     
@@ -129,7 +129,7 @@ def main(args):
     
     parser.add_argument(
         '--verbose', 
-        action='store_true', 
+        action='store_true', # no argument; set verbose to True
         help='Print additional log information'
     )
     
@@ -158,12 +158,18 @@ def main(args):
     for scene_name in args.scenes:
         for config_name in args.configs:
             for opt_config in args.optconfigs:
+                # get config
                 config = get_config(config_name)
+                
+                # get cmdline args
                 remaining_args = apply_cmdline_args(config, uargs, return_dict=True)
-
+                
                 if args.print_params:
+                    # print mitusba arguments
                     opt_config, mts_args = get_opt_config(opt_config, remaining_args)
                     print(f'Mitsuba arguments: {mts_args}')
+                    
+                    # print scene parameters
                     sdf_scene = mi.load_file(
                         join(SCENE_DIR, scene_name, f'{scene_name}.xml'),
                         shape_file='dummysdf.xml', 
@@ -173,7 +179,7 @@ def main(args):
                     print('Parameters: ', mi.traverse(sdf_scene))
                     continue
 
-                # Run the optimization
+                # optimization
                 optimize(scene_name, config, opt_config, args.outputdir, args.refspp, args.force, args.verbose, remaining_args)
 
 

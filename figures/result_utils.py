@@ -123,31 +123,40 @@ def render_reference_object(scene_name, opt_config, image_output_dir,
     mi.util.write_bitmap(fn, result)
 
 
-def eval_forward_gradient(scene, config, axis='x', spp=1024, fd_spp=8192, fd_eps=1e-3, sensor=0):
+def eval_forward_gradient(
+    scene, config, axis='x', 
+    spp=1024, fd_spp=8192, fd_eps=1e-3, sensor=0
+):
     """Evalutes a forward gradient image for a given axis"""
+    # load sdf
     sdf = scene.integrator().sdf
+
+    # single parameter
     params = mi.traverse(scene)
     params.keep([SDF_DEFAULT_KEY_P])
-
     if axis == 'x':
         param = params[SDF_DEFAULT_KEY_P].x
     elif axis == 'y':
         param = params[SDF_DEFAULT_KEY_P].y
     else:
         param = params[SDF_DEFAULT_KEY_P].z
-
+    
     dr.enable_grad(param)
     dr.set_grad(param, 0.0)
     dr.eval(params[SDF_DEFAULT_KEY_P])
+    
     dr.kernel_history_clear()
-    if config.use_finite_differences:
+    if config.use_finite_differences: # finitediff
         with dr.suspend_grad():
-            img = mi.render(scene, integrator=scene.integrator(), sensor=sensor, spp=fd_spp)
+            img = mi.render(scene, integrator=scene.integrator(), 
+                            sensor=sensor, spp=fd_spp)
             param += fd_eps
-            img2 = mi.render(scene, integrator=scene.integrator(), sensor=sensor, spp=fd_spp)
+            img2 = mi.render(scene, integrator=scene.integrator(), 
+                             sensor=sensor, spp=fd_spp)
             grad = (img2 - img) / fd_eps
             dr.eval(grad)
-    else:
+            
+    else: # autodiff
         scene.integrator().warp_field = config.get_warpfield(sdf)
         img = mi.render(scene, params=params, sensor=sensor,
                         integrator=scene.integrator(), spp=spp)

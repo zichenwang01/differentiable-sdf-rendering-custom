@@ -1,4 +1,5 @@
-"""This file stores the global constants used throughout the code base. Most importantly, it specifies output paths and scene directory."""
+""" This file stores the global constants used throughout the code base. 
+    Most importantly, it specifies output paths and scene directory. """
 
 import os
 
