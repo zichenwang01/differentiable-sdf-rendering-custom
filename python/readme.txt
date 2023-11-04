@@ -15,6 +15,19 @@ math_util.py
 util.py 
     This file implements some camera and image utility functions.
 
+----------------------------- SCENE XML --------------------------------
+
+common.xml
+    This file specifies the common parameters for all scenes.
+    This includes intergrator_sdf.xml and sensors.xml
+    This is included in all scenes
+
+intergrator_sdf.xml
+    This file is an integrator interface
+
+sensors.xml
+    This file specifies the cameras
+
 ----------------------------- OPTIMIZE -------------------------------
 
 config.py
@@ -29,9 +42,18 @@ losses.py
 regularizations.py
     This file implements the laplacian regularization functions.
 
+shapes.py 
+
+variables.py
+    This file implements the Variable class.
+    A Variable is a set of parameters of a certain property to optimize.
+
 optimize.py
-    This file optimizes the geometry.
-    This is the MAIN file.
+    This is the MAIN entrance point.
+    This renders the reference images.
+
+shape_opt.py 
+
 
 ----------------------------- POST PROCESS --------------------------------
 

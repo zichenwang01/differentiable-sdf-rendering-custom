@@ -101,6 +101,7 @@ class SdfConfig(SceneConfig):
         self.variables.append(sdf)
         
         """Color Variable"""
+        # reflectance 
         if len(param_keys) > 1 and ('reflectance' in param_keys[1] or 'base_color' in param_keys[1]):
             self.variables.append(VolumeVariable(
                 param_keys[1], (sdf_res, sdf_res, sdf_res, 3),
@@ -109,10 +110,15 @@ class SdfConfig(SceneConfig):
                 beta=self.param_averaging_beta, 
                 lr=texture_lr
             ))
-
+            
+        # roughness
         if len(param_keys) > 2 and 'roughness' in param_keys[2]:
-            self.variables.append(VolumeVariable(param_keys[2], (sdf_res // 4, sdf_res // 4, sdf_res // 4, 1),
-                                                 upsample_iter=[128, 180], beta=self.param_averaging_beta, lr=texture_lr))
+            self.variables.append(VolumeVariable(
+                param_keys[2], (sdf_res // 4, sdf_res // 4, sdf_res // 4, 1),
+                upsample_iter=[128, 180], 
+                beta=self.param_averaging_beta, 
+                lr=texture_lr
+            ))
 
         self.loss = loss
         self.render_upsample_iter = None
@@ -145,6 +151,7 @@ class SdfConfig(SceneConfig):
             v.validate_gradient(opt, i)
 
     def save_params(self, opt, output_dir, i, force=False):
+        """save parameters"""
         if isinstance(i, str) or (i % self.checkpoint_frequency == 0) or force:
             param_dir = os.path.join(output_dir, 'params')
             os.makedirs(param_dir, exist_ok=True)
@@ -172,6 +179,8 @@ def create_scene_config_init_fn(
     name, config_class, sensors, 
     scene_name=None, resx=128, resy=128, **kwargs
 ):
+    """Creates a lambda function that can be used to create a scene config"""
+    
     if not scene_name:
         scene_name = name
 

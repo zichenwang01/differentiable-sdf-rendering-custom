@@ -11,7 +11,6 @@ from constants import SCENE_DIR
 from create_video import create_video
 from util import dump_metadata, render_turntable, resize_img, set_sensor_res
 
-
 def load_ref_images(paths, multiscale=False):
     """Load the reference images and compute scale pyramid for multiscale loss"""
     if not multiscale:
@@ -31,18 +30,23 @@ def load_ref_images(paths, multiscale=False):
 
 def optimize_shape(scene_config, mts_args, ref_image_paths,
                    output_dir, config, write_ldr_images=True):
-    """Main function that runs the actual SDF shape reconstruction"""
+    """Main function that optmizes the geometry"""
 
     # Print out the command line arguments passed to Mitsuba
     if len(mts_args) > 0:
         print(f"Cmdline arguments passed to Mitsuba: {mts_args}")
 
+    # Create output directories
+    opt_image_dir = join(output_dir, 'opt')
+    os.makedirs(opt_image_dir, exist_ok=True)
+    
+    grad_dir = join(output_dir, 'grad')
+    os.makedirs(grad_dir, exist_ok=True)
+
     # Load the reference images
     scene_name = scene_config.scene
     ref_scene_name = join(SCENE_DIR, scene_name, f'{scene_name}.xml')
     ref_images = load_ref_images(ref_image_paths, True)
-
-    # print("load reference images")
 
     # Load scene, currently handle SDF shape separately from Mitsuba scene
     sdf_scene = mi.load_file(
@@ -53,11 +57,11 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
         resx=scene_config.resx, resy=scene_config.resy, 
         **mts_args
     )
-    # print("load sdf scene")
+    
     sdf_object = sdf_scene.integrator().sdf
     sdf_scene.integrator().warp_field = config.get_warpfield(sdf_object)
-
-    # print("load sdf scene")
+    
+    print("sdf object", sdf_object)
 
     # Check SDF placeholder
     params = mi.traverse(sdf_scene)
@@ -66,12 +70,6 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
     params.keep(scene_config.param_keys)
 
     # print("start optimization")
-
-    # Initialize optimizer
-    opt = mi.ad.Adam(lr=config.learning_rate, params=params, mask_updates=config.mask_optimizer)
-    n_iter = config.n_iter
-    scene_config.initialize(opt, sdf_scene)
-    params.update(opt)
 
     # Render shape initialization
     with dr.suspend_grad():
@@ -83,13 +81,12 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
     # Initialize sensor resolutions
     for sensor in scene_config.sensors:
         set_sensor_res(sensor, scene_config.init_res)
-
-    # Create output directories
-    opt_image_dir = join(output_dir, 'opt')
-    os.makedirs(opt_image_dir, exist_ok=True)
     
-    grad_dir = join(output_dir, 'grad')
-    os.makedirs(grad_dir, exist_ok=True)
+    # Initialize optimizer
+    opt = mi.ad.Adam(lr=config.learning_rate, params=params, mask_updates=config.mask_optimizer)
+    n_iter = config.n_iter
+    scene_config.initialize(opt, sdf_scene)
+    params.update(opt)
     
     # Run optimization
     seed = 0

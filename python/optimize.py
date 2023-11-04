@@ -30,6 +30,7 @@ def render_reference_images(
     for sensor_idx, sensor in enumerate(scene_config.sensors):
         set_sensor_res(sensor, mi.ScalarVector2i(scene_config.resx, scene_config.resy))
         fn = join(render_folder, f'ref-{sensor_idx:02d}.exr')
+        print("rendering ref image ", sensor_idx)
         if os.path.isfile(fn) and not force:
             if verbose:
                 print(f'File exists, not rendering of {fn}')
@@ -51,26 +52,27 @@ def copy_reference_images_to_output_dir(scene_config, config, output_dir):
 
 def optimize(scene_name, config, opt_name, output_dir, ref_spp=1024,
              force=False, verbose=False, opt_config_args=None):
-    """The main optimization function"""
-    """Renders reference images and optimizes the SDF for a given scene and config"""
+    """ The main optimization function
+        Renders reference images and optimizes the SDF """
     
     from opt_configs import get_opt_config
     from shape_opt import optimize_shape
 
-    # 1. Render the reference images if needed
+    mi.set_log_level(3 if verbose else mi.LogLevel.Warn)
+
+    # ouput directory
     current_output_dir = join(output_dir, scene_name, opt_name, config.name)
     os.makedirs(current_output_dir, exist_ok=True)
-    mi.set_log_level(3 if verbose else mi.LogLevel.Warn)
+    
+    # read opt config
     opt_config, mts_args = get_opt_config(opt_name, opt_config_args)
 
-    # Pass scene name as part of the opt. config
+    # render reference images
     opt_config.scene = scene_name
     render_reference_images(opt_config, config, ref_spp=ref_spp, force=force, verbose=verbose, mts_args=mts_args)
     ref_image_paths = copy_reference_images_to_output_dir(opt_config, config, current_output_dir)
 
-    # print("start opt shape")
-
-    # 2. Optimize SDF compared to ref image(s)
+    # optimize the geometry
     optimize_shape(opt_config, mts_args, ref_image_paths, current_output_dir, config)
 
 

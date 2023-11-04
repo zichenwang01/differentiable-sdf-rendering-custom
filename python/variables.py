@@ -38,12 +38,8 @@ def simple_lr_decay(initial_lrate, decay, i):
 class Variable:
     """Represents a variable in an optimization that can be initialized, updated and saved"""
 
-    def __init__(
-        self, k, beta=None, 
-        regularizer_weight=0.0, regularizer=None, 
-        lr=None
-    ):
-        self.k = k
+    def __init__(self, k, beta=None, regularizer_weight=0.0, regularizer=None, lr=None):
+        self.k = k # key
         self.mean = None
         self.beta = beta
         self.regularizer_weight = regularizer_weight
