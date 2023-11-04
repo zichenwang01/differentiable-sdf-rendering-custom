@@ -26,6 +26,9 @@ def create_video(experiment, scene_config, config, output_dir, frames, spp, res,
 
 
 def main(args):
+    mi.set_log_level(mi.LogLevel.Warn)
+    
+    # init parser
     parser = argparse.ArgumentParser(description='''Render turntable video''')
     parser.add_argument('scenes', default=None, nargs='*')
     parser.add_argument('--configs', default=['BaseConfig'], type=str, nargs='*')
@@ -34,9 +37,9 @@ def main(args):
     parser.add_argument('--spp', default=256, type=int)
     parser.add_argument('--res', default=512, type=int)
     parser.add_argument('--outputdir', default=OUTPUT_DIR)
+    
+    # read parser
     args, uargs = parser.parse_known_args(args)
-    mi.set_log_level(mi.LogLevel.Warn)
-
     if args.optconfigs is None:
         raise ValueError("Must at least specify one opt. config!")
     assert all(is_valid_opt_config(opt) for opt in args.optconfigs), f"Unknown opt config detected: {args.optconfigs}"
@@ -44,12 +47,19 @@ def main(args):
     for scene in args.scenes:
         for opt_config in args.optconfigs:
             for config_name in args.configs:
+                # get config
                 config = get_config(config_name)
                 remaining_args = apply_cmdline_args(config, uargs, return_dict=True)
+                
+                # get opt config
                 scene_config, mts_args = get_opt_config(opt_config, remaining_args)
                 scene_config.scene = scene
-                create_video(opt_config, scene_config, config, args.outputdir,
-                             args.frames, args.spp, args.res, mts_args)
+                
+                # render video
+                create_video(
+                    opt_config, scene_config, config, 
+                    args.outputdir, args.frames, args.spp, args.res, mts_args
+                )
 
 
 if __name__ == "__main__":

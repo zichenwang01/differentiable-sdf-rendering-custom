@@ -1,11 +1,10 @@
-"""Various utility functions used throughout the code."""
 import os
+import tqdm
 import subprocess
 from os.path import join
 
 import drjit as dr
 import mitsuba as mi
-import tqdm
 
 # Initialize the image filters used to resample images
 GAUSSIAN_RFILTER = mi.scalar_rgb.load_dict({'type': 'gaussian'})
@@ -22,25 +21,37 @@ def resize_img(img, target_res, smooth=False):
     return img.resample([target_res[1], target_res[0]], rfilter)
 
 
-def render_turntable(scene, output_dir, resx=128, resy=128, spp=64, n_frames=64, write_exr_files=False):
+def render_turntable(
+    scene, output_dir, resx=128, resy=128, 
+    spp=64, n_frames=64, write_exr_files=False
+):
     """Renders a given scene as a turntable video"""
 
+    # output directory
     frame_output_dir = os.path.join(output_dir, 'turntable')
     os.makedirs(frame_output_dir, exist_ok=True)
-    radius = 1.5
+    
     for frame in tqdm.tqdm(range(n_frames)):
+        # camera angle
         angle = frame / n_frames * 2 * dr.pi
+        
+        # camera position
+        radius = 1.5
         o = mi.ScalarPoint3f(dr.cos(angle) * radius + 0.5, 0.8, dr.sin(angle) * radius + 0.5)
+        
+        # load sensor
         sensor = mi.load_dict({
             'type': 'perspective',
-                    'fov': 39.0,
-                    'sampler': {'type': 'independent'},
-                    'film': {'type': 'hdrfilm', 'width': resx, 'height': resy,
-                             'pixel_filter': {'type': 'gaussian'}},
-                    'to_world': mi.ScalarTransform4f.look_at(mi.ScalarPoint3f(o[0], o[1], o[2]), [0.5, 0.5, 0.5], [0, 1, 0])})
+            'fov': 39.0,
+            'sampler': {'type': 'independent'},
+            'film': {'type': 'hdrfilm', 'width': resx, 'height': resy, 'pixel_filter': {'type': 'gaussian'}}, 'to_world': mi.ScalarTransform4f.look_at(mi.ScalarPoint3f(o[0], o[1], o[2]), [0.5, 0.5, 0.5], [0, 1, 0])
+        })
 
+        # render
         with dr.suspend_grad():
             result = mi.render(scene, seed=frame, spp=spp, sensor=sensor)
+            
+        # save render images
         bmp = mi.Bitmap(result)
         fn = join(frame_output_dir, f'frame-{frame:04d}.exr')
         if write_exr_files:
@@ -72,9 +83,13 @@ def run_ffmpeg(frame_name, video_path):
 
 def get_file_sensors(fn, resx, resy, indices):
     """Retrieves a list of sensors from a Mitsuba scene file"""
+    
     from constants import SCENE_DIR
-    sensors = mi.load_file(os.path.join(SCENE_DIR, fn),
-                           integrator='sdf_direct_reparam', resx=resx, resy=resy).sensors()
+    sensors = mi.load_file(
+        os.path.join(SCENE_DIR, fn),
+        integrator='sdf_direct_reparam', resx=resx, resy=resy
+    ).sensors()
+    
     if indices is not None:
         return [sensors[i] for i in indices]
     else:
@@ -124,8 +139,10 @@ def get_regular_cameras(n_sensors, angle_shift=0.0, resx=128, resy=128, radius=2
     import numpy as np
 
     height_steps = int(n_sensors > 1)
-    origins = get_regular_camera_positions(n_sensors, height_steps, hemisphere=True, vary_height=True,
-                                           radius=radius, angle_shift=angle_shift, height_scale=height_scale)
+    origins = get_regular_camera_positions(
+        n_sensors, height_steps, hemisphere=True, vary_height=True,
+        radius=radius, angle_shift=angle_shift, height_scale=height_scale
+    )
     origins = np.array(origins)
     sensors = []
     sampler = mi.load_dict({'type': 'independent'})

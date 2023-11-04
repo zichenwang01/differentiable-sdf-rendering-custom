@@ -1,7 +1,6 @@
 import drjit as dr
 import mitsuba as mi
 
-
 def eval_discrete_laplacian_reg(data, _=None):
     """Simple discrete laplacian regularization to encourage smooth surfaces"""
 

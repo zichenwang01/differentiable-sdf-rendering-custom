@@ -1,27 +1,28 @@
 """This script contains functionality to create a video of the optimization progress of a previously run optimization. It does not render any new frames and just uses the frames written out during optimization. """
 
-import argparse
-import glob
 import os
 import sys
+import glob
+import tqdm
+import argparse
 from os.path import join
 
-import mitsuba as mi
 import numpy as np
-import tqdm
+import mitsuba as mi
 
 from constants import OUTPUT_DIR
 from tempfile import TemporaryDirectory
 
 def gallery(array, ncols=2):
-    """Code adapted from https://stackoverflow.com/a/42041135/2351867"""
+    """ Reshape an array of images into a grid.
+        Code adapted from https://stackoverflow.com/a/42041135/2351867 """
 
     n_imgs, height, width, channels = array.shape
     nrows = n_imgs // ncols
     assert n_imgs == nrows * ncols
     return array.reshape(nrows, ncols, height, width, channels) \
-        .swapaxes(1, 2) \
-        .reshape(height * nrows, width * ncols, channels)
+                .swapaxes(1, 2) \
+                .reshape(height * nrows, width * ncols, channels)
 
 def create_video(output_dir):
     """Create a video from the images in the given directory."""
@@ -80,10 +81,12 @@ def create_video(output_dir):
 
 def main(args):
     mi.set_variant('scalar_rgb')
+    
     parser = argparse.ArgumentParser(description='''Assemble optimization progress video''')
     parser.add_argument('experiments', default=None, nargs='*')
     parser.add_argument('--outputdir', default=OUTPUT_DIR)
     parser.add_argument('--verbose', action='store_true')
+    
     args, uargs = parser.parse_known_args(args)
     for experiment in args.experiments:
         create_video(join(args.outputdir, experiment))

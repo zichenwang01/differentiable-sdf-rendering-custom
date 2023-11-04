@@ -2,7 +2,8 @@ import fastsweep
 
 def redistance(phi, method='fastsweep'):
 
-    if method == 'fastsweep':
+    if method == 'fastsweep': 
+        # requires cuda
         return fastsweep.redistance(phi)
     if method == 'fmm':
         import skfmm

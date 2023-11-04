@@ -25,14 +25,12 @@ def outer_product(v, w):
 
 
 def bbox_distance_inside(x, bbox):
-    return dr.maximum(
-        0.0, 
-        dr.minimum(dr.min(x - bbox.min), 
-                   dr.min(bbox.max - x))
-    )
+    """Computes the distance of a point to a bounding box"""
+    return dr.maximum(0.0, dr.minimum(dr.min(x - bbox.min), dr.min(bbox.max - x)))
 
 
 def bbox_distance_inside_d(x, bbox):
+    """Computes the distance of a point to a bounding box and its Jacobian"""
     bbox_dist = dr.maximum(0.0, dr.minimum(dr.min(x - bbox.min), dr.min(bbox.max - x)))
     bbox_max_dist = dr.abs(bbox.max - x)
     bbox_min_dist = dr.abs(bbox.min - x)
