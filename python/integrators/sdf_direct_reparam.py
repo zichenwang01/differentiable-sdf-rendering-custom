@@ -2,8 +2,8 @@ import drjit as dr
 import mitsuba as mi
 from mitsuba.ad.integrators.common import mis_weight
 
+from constants import IS_DEBUG
 from .reparam import ReparamIntegrator
-
 
 class SdfDirectReparamIntegrator(ReparamIntegrator):
     
@@ -22,6 +22,10 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
         # Reparameterize only if we are not rendering in primal mode
         reparametrize = True and mode != dr.ADMode.Primal
         reparam_primary_ray = True and reparametrize
+        
+        if IS_DEBUG:
+            print("is reparametrizing: ", reparametrize)
+            print("is reparametrizing primary ray: ", reparam_primary_ray)
         
         # Compute ray intersection
         si, si_d0, det, extra_output = self.ray_intersect(scene, sampler, ray, depth=0, reparam=reparam_primary_ray)

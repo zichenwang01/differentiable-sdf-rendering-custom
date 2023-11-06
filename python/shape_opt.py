@@ -7,6 +7,7 @@ import numpy as np
 import drjit as dr
 import mitsuba as mi
 
+from constants import IS_DEBUG
 from constants import SCENE_DIR
 from create_video import create_video
 from util import dump_metadata, render_turntable, resize_img, set_sensor_res
@@ -32,6 +33,9 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
                    output_dir, config, write_ldr_images=True):
     """Main function that optmizes the geometry"""
 
+    if IS_DEBUG:
+        print("Enter geometry optimization")
+ 
     # Print out the command line arguments passed to Mitsuba
     if len(mts_args) > 0:
         print(f"Cmdline arguments passed to Mitsuba: {mts_args}")
@@ -47,16 +51,28 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
     scene_name = scene_config.scene
     ref_scene_name = join(SCENE_DIR, scene_name, f'{scene_name}.xml')
     ref_images = load_ref_images(ref_image_paths, True)
-
+    
+    if IS_DEBUG:
+        print("Loaded reference images")
+        print("ref_scene_name: ", ref_scene_name)
+        print("scene_name: ", scene_name)
+    
     # Load scene, currently handle SDF shape separately from Mitsuba scene
     sdf_scene = mi.load_file(
         ref_scene_name, 
         shape_file='dummysdf.xml', # load initial sphere
-        sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_opt_255.vol'),
+        # sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_opt_255.vol'),
         integrator=config.integrator, # load custom integrator
         resx=scene_config.resx, resy=scene_config.resy, 
         **mts_args
     )
+    
+    if IS_DEBUG:
+        print("Loaded scene")
+        print("integrator", sdf_scene.integrator())
+        print("integrator name", sdf_scene.integrator().name)
+        print("sdf: ", sdf_scene.integrator().sdf)
+        print("sdf shape: ", sdf_scene.integrator().sdf_shape)
     
     sdf_object = sdf_scene.integrator().sdf
     sdf_scene.integrator().warp_field = config.get_warpfield(sdf_object)
@@ -97,17 +113,23 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
             loss = mi.Float(0.0)
             for idx, sensor in scene_config.get_sensor_iterator(i):
                 # Render image
-                img = mi.render(sdf_scene, params=params, sensor=sensor,
-                                seed=seed, spp=config.spp * config.primal_spp_mult,
-                                seed_grad=seed + 1 + len(scene_config.sensors), spp_grad=config.spp)
+                img = mi.render(
+                    sdf_scene, params=params, sensor=sensor, seed=seed, 
+                    spp=config.spp * config.primal_spp_mult,
+                    seed_grad=seed + 1 + len(scene_config.sensors), 
+                    spp_grad=config.spp
+                )
                 seed += 1 + len(scene_config.sensors)
                 
                 # Compute image loss
                 loss_func = scene_config.loss
                 if loss_func.__name__ == 'l2_xixi':
-                    img2 = mi.render(sdf_scene, params=params, sensor=sensor,
-                                    seed=seed, spp=config.spp * config.primal_spp_mult,
-                                    seed_grad=seed + 1 + len(scene_config.sensors), spp_grad=config.spp)
+                    img2 = mi.render(
+                        sdf_scene, params=params, sensor=sensor, seed=seed, 
+                        spp=config.spp * config.primal_spp_mult,
+                        seed_grad=seed + 1 + len(scene_config.sensors), 
+                        spp_grad=config.spp
+                    )
                     view_loss = loss_func(img, img2, ref_images[idx][sensor.film().crop_size()[0]]) / scene_config.batch_size
                 else:
                     view_loss = scene_config.loss(img, ref_images[idx][sensor.film().crop_size()[0]]) / scene_config.batch_size
@@ -119,6 +141,7 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
                 bmp = resize_img(mi.Bitmap(img), scene_config.target_res)
                 mi.util.write_bitmap(join(opt_image_dir, f'opt-{i:04d}-{idx:02d}' + ('.png' if write_ldr_images else '.exr')), bmp)
                 
+                # accumulate loss
                 loss += view_loss
 
             # Compute regularization loss

@@ -11,28 +11,32 @@ class ReparamIntegrator(mi.SamplingIntegrator):
 
     def __init__(self, props=mi.Properties()):
         super().__init__(props)
+        self.name = props.get('name', 'sdf-reparam')
         self.max_depth = props.get('max_depth', 4)
-        self.weight_by_spp = props.get('weight_by_spp', False)
-        assert not self.weight_by_spp, "Not supported"
+
         self.use_mis = props.get('use_mis', False)
         self.force_optix = props.get('force_optix', False)
+        self.weight_by_spp = props.get('weight_by_spp', False)
         self.antithetic_sampling = props.get('antithetic_sampling', False)
-
-        sdf_transform = None
-        if props.has_property('sdf_to_world'):
-            sdf_transform = props.get('sdf_to_world', mi.ScalarTransform4f())
-            sdf_transform = mi.ScalarTransform4f(sdf_transform.matrix)
-
-        sdf_filename = props.get('sdf_filename', '')
-        if sdf_filename != '':
-            self.sdf = Grid3d(sdf_filename, transform=sdf_transform)
-        else:
-            self.sdf = None
+        assert not self.weight_by_spp, "Not supported"
 
         self.warp_field = None
         self.sdf_shape = None
         self.is_prepared = False
         self.use_optix = True
+
+        # sdf transform
+        sdf_transform = None
+        if props.has_property('sdf_to_world'):
+            sdf_transform = props.get('sdf_to_world', mi.ScalarTransform4f())
+            sdf_transform = mi.ScalarTransform4f(sdf_transform.matrix)
+
+        # load sdf
+        sdf_filename = props.get('sdf_filename', '')
+        if sdf_filename != '':
+            self.sdf = Grid3d(sdf_filename, transform=sdf_transform)
+        else:
+            self.sdf = None
 
     def prepare(self, sensor, seed, spp, aovs=[]):
         """prepare film and sampler"""
@@ -61,6 +65,8 @@ class ReparamIntegrator(mi.SamplingIntegrator):
 
 
     def prepare_sdf(self, scene):
+        """prepare SDF"""
+        
         if self.is_prepared:
             return
 
@@ -76,6 +82,8 @@ class ReparamIntegrator(mi.SamplingIntegrator):
                 self.sdf_shape = s
                 shape_idx = idx
                 break
+            
+        # check dummy sdf
         if self.sdf_shape is None:
             raise ValueError("Scene is missing a dummy SDF shape that holds the BSDF")
 
@@ -206,9 +214,11 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         # print("eval_sample")
 
         # sample and evaluate light path 
+        # this calls the main sample function
         active = mi.Bool(True)
         self.eval_sample(mode, scene, sensor, sampler, block, _aovs, 
                          position_scaled, spp, active)
+        
         # Antithetic sample: mirrored
         if self.antithetic_sampling:
             self.eval_sample(mode, scene, sensor, sampler2, block, _aovs, 

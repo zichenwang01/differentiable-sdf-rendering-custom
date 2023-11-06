@@ -18,4 +18,7 @@ PAPER_FIG_OUTPUT_DIR = os.path.join(PAPER_DIR, 'figures')
 SDF_DEFAULT_KEY = 'SamplingIntegrator.sdf.data'
 SDF_DEFAULT_KEY_P = 'SamplingIntegrator.sdf.p'
 
+# debug flag
+IS_DEBUG = False
+
 del __SCRIPT_DIR

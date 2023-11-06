@@ -1,9 +1,9 @@
+import numpy as np
 import drjit as dr
 import mitsuba as mi
-import numpy as np
 
-import math_util as util
 import redistancing
+import math_util as util
 from util import atleast_4d
 
 XX = 0
@@ -13,10 +13,8 @@ XY = 3
 XZ = 4
 YZ = 5
 
-
 def detach(x, detach_variable=True):
     return dr.detach(x) if detach_variable else x
-
 
 def sigmoid(x):
     return dr.exp(x) / (1 + dr.exp(x))

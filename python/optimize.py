@@ -30,7 +30,6 @@ def render_reference_images(
     for sensor_idx, sensor in enumerate(scene_config.sensors):
         set_sensor_res(sensor, mi.ScalarVector2i(scene_config.resx, scene_config.resy))
         fn = join(render_folder, f'ref-{sensor_idx:02d}.exr')
-        print("rendering ref image ", sensor_idx)
         if os.path.isfile(fn) and not force:
             if verbose:
                 print(f'File exists, not rendering of {fn}')

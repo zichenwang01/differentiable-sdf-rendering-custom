@@ -273,13 +273,17 @@ class SdfPrbReparamIntegrator(ReparamIntegrator):
 
         # Record the following loop in its entirety
         if hasattr(reparam, 'DRJIT_STRUCT'):
-            loop = mi.Loop(name="Path Replay Backpropagation (%s)" % mode.name,
-                        state=lambda: (sampler, depth, L, δL, β, η, mis_em, active,
-                                       ray_prev, ray_cur, pi_prev, pi_cur, reparam))
+            loop = mi.Loop(
+                name="Path Replay Backpropagation (%s)" % mode.name,
+                state=lambda: (sampler, depth, L, δL, β, η, mis_em, active,
+                                ray_prev, ray_cur, pi_prev, pi_cur, reparam)
+            )
         else:
-            loop = mi.Loop(name="Path Replay Backpropagation (%s)" % mode.name,
-                        state=lambda: (sampler, depth, L, δL, β, η, mis_em, active,
-                                       ray_prev, ray_cur, pi_prev, pi_cur))
+            loop = mi.Loop(
+                name="Path Replay Backpropagation (%s)" % mode.name,
+                state=lambda: (sampler, depth, L, δL, β, η, mis_em, active,
+                                ray_prev, ray_cur, pi_prev, pi_cur)
+            )
         loop.set_max_iterations(self.max_depth)
         while loop(active):
             first_vertex = dr.eq(depth, 0)

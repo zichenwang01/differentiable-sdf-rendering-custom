@@ -43,17 +43,31 @@ regularizations.py
     This file implements the laplacian regularization functions.
 
 shapes.py 
+    This file implements the SDF class.
+    This also implements ray intersect (sphere tracing).
 
 variables.py
     This file implements the Variable class.
     A Variable is a set of parameters of a certain property to optimize.
 
 optimize.py
+    This file reads parser arguments and calls optimization
+    This also renders the reference images.
     This is the MAIN entrance point.
-    This renders the reference images.
 
 shape_opt.py 
+    This file optimizes the geometry.
+    This also loads the scene and the integrator.
+    This is MAIN optimization loop.
 
+----------------------------- INTEGRATOR --------------------------------
+
+reparam.py
+    This file implements the base integrator.
+    This also implements ray intersection.
+
+sdf_direct_reparam.py
+    This file implements the direct SDF reparam integrator.
 
 ----------------------------- POST PROCESS --------------------------------
 
