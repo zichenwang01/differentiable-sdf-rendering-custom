@@ -134,12 +134,20 @@ def eval_forward_gradient(
     # single parameter
     params = mi.traverse(scene)
     params.keep([SDF_DEFAULT_KEY_P])
+    
+    print("params: ", params)
+    print("params[SDF_DEFAULT_KEY_P]: ", params[SDF_DEFAULT_KEY_P])
+    print()
+    
     if axis == 'x':
         param = params[SDF_DEFAULT_KEY_P].x
     elif axis == 'y':
         param = params[SDF_DEFAULT_KEY_P].y
     else:
         param = params[SDF_DEFAULT_KEY_P].z
+    
+    print("param: ", param)
+    print()
     
     dr.enable_grad(param)
     dr.set_grad(param, 0.0)

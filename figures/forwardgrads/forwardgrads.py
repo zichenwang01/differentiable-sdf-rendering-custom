@@ -8,6 +8,8 @@ import argparse
 
 SCRIPT_DIR = os.path.realpath(os.path.dirname(__file__))
 sys.path.append(os.path.join(SCRIPT_DIR, '..'))
+print(SCRIPT_DIR)
+
 from common import *
 import configs
 from constants import FIGURE_DIR, SCENE_DIR

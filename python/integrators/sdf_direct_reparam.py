@@ -35,7 +35,7 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
                     scene.environment() is not None
         valid_ray |= si.is_valid()
 
-        # Throughput describes 
+        # Throughput 
         throughput = mi.Spectrum(1.0)
         throughput *= det
         
@@ -53,7 +53,7 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
         active_e = active & si.is_valid() & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
         si_d = dr.detach(si)
         with dr.suspend_grad():
-            ds, _ = scene.sample_emitter_direction(si_d, sampler.next_2d(active_e), False, active_e)
+            ds, emitter_val0 = scene.sample_emitter_direction(si_d, sampler.next_2d(active_e), False, active_e)
 
         active_e &= dr.neq(ds.pdf, 0.0)
 
@@ -84,20 +84,24 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
         si_e.wi = -shadow_ray.d
         si_e.wavelengths = ray.wavelengths
         emitter_val = dr.select(active_e, ds.emitter.eval(si_e, active_e), 0.0)
+        # incorrect here
 
         # TODO: Doing this correctly would need recomputing UV differentibably
         # ds.d = shadow_ray.d
         # wo = si.to_local(shadow_ray.d)
         # emitter_val = scene.eval_emitter_direction(dr.detach(si), ds, active_e) # recompute contrib differentiably
+        # emitter_val = dr.select(ds.pdf != 0, emitter_val / ds.pdf, 0.0)
         emitter_val = dr.select(ds.pdf > 0, emitter_val / ds.pdf, 0.0)
         visiblity = dr.select(~occluded, 1.0, 0.0)
 
         if self.use_mis:
             bsdf_val, bsdf_pdf = bsdf.eval_pdf(ctx, si, wo, active_e)
-            nee_contrib = visiblity * bsdf_val * emitter_val * mis_weight(ds.pdf, dr.detach(bsdf_pdf))
+            nee_contrib = visiblity * bsdf_val * emitter_val0 * mis_weight(ds.pdf, dr.detach(bsdf_pdf))
+            # nee_contrib = visiblity * bsdf_val * emitter_val * mis_weight(ds.pdf, dr.detach(bsdf_pdf))
         else:
             bsdf_val = bsdf.eval(ctx, si, wo, active_e)
-            nee_contrib = visiblity * bsdf_val * emitter_val
+            nee_contrib = visiblity * bsdf_val * emitter_val0
+            # nee_contrib = visiblity * bsdf_val * emitter_val
 
         result[active_e] += throughput * nee_contrib * det_e
 

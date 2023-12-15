@@ -376,29 +376,56 @@ class Grid3d(SDFBase):
     def __init__(self, data, transform=None):
         super().__init__()
 
-        self.has_transform = transform is not None
-        if transform is None:
-            transform = mi.ScalarTransform4f(1.0)
-        if type(data) is str:
-            data = mi.Thread.thread().file_resolver().resolve(data)
-            data = redistancing.redistance(mi.TensorXf(mi.VolumeGrid(data)))
-        self.texture = mi.Texture3f(data.shape[:3], 1, use_accel=False)
-        self.texture.set_tensor(atleast_4d(data), migrate=False)
-        self.p = mi.Vector3f(0, 0, 0)
-        self.to_world = transform
-        self.to_local = self.to_world.inverse()
-        self.update_bbox()
+        if data.endswith('.sdf'):
+            import numpy as np
+            data = np.loadtxt(data)
+            res = int(data[0])
+            grid = mi.TensorXf(data[1:], shape=(res,res,res, 1))
+            self.texture = mi.Texture3f(grid, use_accel=False)
+            # self.texture.set_tensor(atleast_4d(data), migrate=False)
+            self.p = mi.Vector3f(0, 0, 0)
+            self.has_transform = transform is not None
+            if transform is None:
+                transform = mi.ScalarTransform4f(1.0)
+            self.to_world = transform
+            self.to_local = self.to_world.inverse()
+            self.update_bbox()
+        else:
+            self.has_transform = transform is not None
+            if transform is None:
+                transform = mi.ScalarTransform4f(1.0)
+            if type(data) is str:
+                print("data: ", data)
+                data = mi.Thread.thread().file_resolver().resolve(data)
+                print("data: ", data)
+                data = redistancing.redistance(mi.TensorXf(mi.VolumeGrid(data)))
+            print("data.shape: ", data.shape)
+            self.texture = mi.Texture3f(data.shape[:3], 1, use_accel=False)
+            self.texture.set_tensor(atleast_4d(data), migrate=False)
+            print("data.shape: ", data.shape)
+            self.p = mi.Vector3f(0, 0, 0)
+            self.to_world = transform
+            self.to_local = self.to_world.inverse()
+            self.update_bbox()
 
     def update_bbox(self):
         self.aabb = mi.ScalarBoundingBox3f()
         self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 0.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 1.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 1.0, 0.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 1.0, 1.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 0.0, 0.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 0.0, 1.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 1.0, 0.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 1.0, 1.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 2.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 2.0, 0.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 2.0, 2.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 0.0, 0.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 0.0, 2.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 2.0, 0.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 2.0, 2.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 0.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 1.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 1.0, 0.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 1.0, 1.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 0.0, 0.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 0.0, 1.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 1.0, 0.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 1.0, 1.0))
 
     def resolution(self):
         return self.grid.resolution()
