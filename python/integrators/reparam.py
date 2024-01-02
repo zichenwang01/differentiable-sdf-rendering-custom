@@ -68,6 +68,7 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         """prepare SDF"""
         
         if self.is_prepared:
+            # print("already prepared")
             return
 
         if self.sdf is None:
@@ -78,6 +79,8 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         self.use_optix = self.force_optix or len(scene.shapes()) > 1
         # extract the dummy shape that holds the SDFs BSDF
         for idx, s in enumerate(scene.shapes()):
+            # print(s.id())
+            # print(s)
             if '_sdf_' in s.id():
                 self.sdf_shape = s
                 shape_idx = idx
@@ -88,6 +91,7 @@ class ReparamIntegrator(mi.SamplingIntegrator):
             raise ValueError("Scene is missing a dummy SDF shape that holds the BSDF")
 
         self.sdf_shape = dr.gather(mi.ShapePtr, scene.shapes_dr(), shape_idx)
+        # print("sdf shape", self.sdf_shape)
         dr.eval(self.sdf_shape)
         self.is_prepared = True
 

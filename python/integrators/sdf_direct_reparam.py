@@ -10,7 +10,9 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
     def __init__(self, props=mi.Properties()):
         super().__init__(props)
         self.use_aovs = props.get('use_aovs', False)
-        self.hide_emitters = props.get('hide_emitters', False)
+        # self.hide_emitters = props.get('hide_emitters', False)
+        self.hide_emitters = props.get('hide_emitters', True)
+        self.hide_emitters = True
         self.detach_indirect_si = props.get('detach_indirect_si', False)
         self.decouple_reparam = props.get('decouple_reparam', False)
 
