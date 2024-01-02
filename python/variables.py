@@ -84,10 +84,11 @@ class VolumeVariable(Variable):
         self.shape = np.array(shape)
         self.init_value = init_value
         self.upsample_iter = upsample_iter
-        if self.upsample_iter is not None:
-            self.upsample_iter = list(self.upsample_iter)
-            for i in range(3):
-                self.shape[i] = self.shape[i] // 2 ** len(self.upsample_iter)
+        # EDIT: COMMENTED OUT
+        # if self.upsample_iter is not None:
+        #     self.upsample_iter = list(self.upsample_iter)
+        #     for i in range(3):
+        #         self.shape[i] = self.shape[i] // 2 ** len(self.upsample_iter)
 
     def initialize(self, opt):
         opt[self.k] = dr.full(mi.TensorXf, self.init_value, self.shape)
@@ -101,6 +102,14 @@ class VolumeVariable(Variable):
 
     def save(self, opt, output_dir, suffix):
         mi.VolumeGrid(np.array(opt[self.k])).write(self.get_variable_path(output_dir, suffix))
+        
+        # print("output: ", output_dir)
+        # exit(0)
+        grid = np.array(opt[self.k])
+        resolution = grid.shape[0]
+        grid = grid.flatten()
+        grid = [resolution] + grid.tolist()
+        np.savetxt(os.path.join(output_dir, f"{resolution}.sdf"), grid, fmt='%f')
 
     def restore(self, opt, output_dir, suffix):
         loaded_data = np.array(mi.VolumeGrid(self.get_variable_path(output_dir, suffix)))
@@ -174,6 +183,10 @@ class SdfVariable(VolumeVariable):
             self.shape = sdf.shape
             if self.bbox_constraint:
                 self.update_box_sdf(self.shape)
+            self.initial_lr /= 1
+            opt.set_learning_rate(self.initial_lr)
+            opt.set_learning_rate({k: self.initial_lr})
+            print(opt)
         else:
             self.shape = opt[k].shape
             sdf = opt[k]

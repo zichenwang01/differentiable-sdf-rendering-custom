@@ -31,6 +31,7 @@ print()
 # scene name
 # scene_name = '/home/zw336/IR/differentiable-sdf-rendering/scenes/dragon/dragon.xml'
 scene_name = '/home/zw336/IR/differentiable-sdf-rendering/scenes/custom.xml'
+# scene_name = '/home/zw336/IR/differentiable-sdf-rendering/scenes/custom_bottom.xml'
 
 # sdf name
 from constants import SCENE_DIR
@@ -39,17 +40,19 @@ from constants import SCENE_DIR
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'bunny_bottom_res=256.sdf')
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'dragon_background_res=512.sdf')
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'dragon_bottom_res=512.sdf')
-sdf_filename = join(SCENE_DIR, 'sdfs', 'buddha_background_res=512.sdf')
+# sdf_filename = join(SCENE_DIR, 'sdfs', 'buddha_background_res=512.sdf')
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'buddha_bottom_res=512.sdf')
+# sdf_filename = join(SCENE_DIR, 'sdfs', 'buddha_bottom_rotated.sdf')
+sdf_filename = '/home/zw336/IR/bp/exp/10.sdf_eps=1e-4/opt_suzanne_res=64_lr=0.001_reg=1e-05/sdf/epoch=100.sdf'
 
 # sensor name
 sensor_filename = join(SCENE_DIR, 'custom_background_sensors.xml')
 # sensor_filename = join(SCENE_DIR, 'custom_bottom_sensors.xml')
 
 # emitter name
-# emitter_filename = join(SCENE_DIR, 'emitters', 'cathedral.xml')
+emitter_filename = join(SCENE_DIR, 'emitters', 'cathedral.xml')
 # emitter_filename = join(SCENE_DIR, 'emitters', 'custom_top_area.xml')
-emitter_filename = join(SCENE_DIR, 'emitters', 'custom_tilt_front_area.xml')
+# emitter_filename = join(SCENE_DIR, 'emitters', 'custom_tilt_front_area.xml')
 # emitter_filename = join(SCENE_DIR, 'emitters', 'custom_point.xml')
 
 # load scene
@@ -85,19 +88,39 @@ image = mi.render(
 )
 mi.util.write_bitmap('primal.exr', image)
 
+bitmap = mi.Bitmap(image)
+mi.util.write_bitmap('primal.png', bitmap)
+
 # render forward
 # image = integrator.render(scene=sdf_scene, sensor=sensor, spp=config.spp * config.primal_spp_mult, mode=dr.ADMode.Forward)
 # mi.util.write_bitmap('forward.exr', image)
 
 print("Rendered scene")
-# exit(0)
+exit(0)
 # ------------------------------ FORWARD GRADIENTS -----------------------------
 sys.path.append('/home/zw336/IR/differentiable-sdf-rendering/figures')
 
 import configs
-method = configs.Warp()
+# method = configs.Warp()
+# method = configs.ConvolutionWarp32()
+# method = configs.ConvolutionWarp16()
+method = configs.ConvolutionWarp8()
 
+import time
 from common import *
-image, gradient, stats = eval_forward_gradient(scene=sdf_scene, config=method, axis='y', spp=1024)
+start = time.time()
+image, gradient, stats = eval_forward_gradient(scene=sdf_scene, config=method, axis='x', spp=1024)
+end = time.time()
+print("Forward gradient time: ", end - start)
+print("Forward gradient stats: ", stats)
 
-mi.util.write_bitmap('forward.exr', gradient)
+# mi.util.write_bitmap('vicini.exr', gradient)
+# mi.util.write_bitmap('conv32.exr', gradient)
+# mi.util.write_bitmap('conv16.exr', gradient)
+mi.util.write_bitmap('conv8.exr', gradient)
+
+bitmap = mi.Bitmap(gradient)
+# mi.util.write_bitmap('vicini.png', bitmap)
+# mi.util.write_bitmap('conv32.png', bitmap)
+# mi.util.write_bitmap('conv16.png', bitmap)
+mi.util.write_bitmap('conv8.png', bitmap)

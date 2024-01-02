@@ -133,7 +133,7 @@ def get_regular_camera_positions(angle_steps, height_steps, hemisphere=True,
     return origins
 
 
-def get_regular_cameras(n_sensors, angle_shift=0.0, resx=128, resy=128, radius=2.0, height_scale=1.0):
+def get_regular_cameras(n_sensors, angle_shift=0.0, resx=256, resy=256, radius=2.0, height_scale=1.0):
     """Generates regularly spaced sensors for optimization. Returns a list of Mitsuba sensors"""
 
     import numpy as np
@@ -164,6 +164,25 @@ def get_regular_cameras(n_sensors, angle_shift=0.0, resx=128, resy=128, radius=2
 def get_regular_cameras_top(n_sensors, angle_shift=0.0, resx=128, resy=128, radius=2.0):
     """Generates regularly spaced sensors that primarily look down from a top view"""
     return get_regular_cameras(n_sensors, angle_shift, resx, resy, radius, height_scale=1.3)
+
+
+def get_sensors(num_sensor=16, resx=256, resy=256):
+    """Return a list of sensors arranged in a circle around the origin"""
+    sensors = []
+    for i in range(num_sensor):
+        angle = 360.0 / num_sensor * i
+        # angle = 0
+        sensors.append(mi.load_dict({
+            'type': 'perspective', 'fov': 45,
+            'sampler': {'type': 'independent'},
+            'film': {
+                'type': 'hdrfilm',
+                'width': resx, 'height': resy,
+                'filter': {'type': 'gaussian'}
+            },
+            'to_world': mi.ScalarTransform4f.translate([0.5, 0.5, 0.5]).rotate([0, 1, 0], angle).look_at(target=[0, 0, 0], origin=[0, 0, 0.5], up=[0, 1, 0]),
+        }))
+    return sensors
 
 
 def set_sensor_res(sensor, res):

@@ -376,19 +376,29 @@ class Grid3d(SDFBase):
     def __init__(self, data, transform=None):
         super().__init__()
 
-        if data.endswith('.sdf'):
+        if type(data) is str and data.endswith('.sdf'):
             import numpy as np
             data = np.loadtxt(data)
             res = int(data[0])
             grid = mi.TensorXf(data[1:], shape=(res,res,res, 1))
             self.texture = mi.Texture3f(grid, use_accel=False)
             # self.texture.set_tensor(atleast_4d(data), migrate=False)
+            # from parameter import p
             self.p = mi.Vector3f(0, 0, 0)
+            # self.p = mi.Vector3f(p - dr.detach(p), 0, 0)
             self.has_transform = transform is not None
             if transform is None:
                 transform = mi.ScalarTransform4f(1.0)
+                # from parameter import p
+                # transform = dr.scalar.Matrix4f([ [1, 0, 0, p - dr.detach(p)], 
+                #                             [0, 1, 0, 0], 
+                #                             [0, 0, 1, 0], 
+                #                             [0, 0, 0, 1] ])
+                # transform = mi.ScalarTransform4f(transform)
             self.to_world = transform
             self.to_local = self.to_world.inverse()
+            # print("to_world: ", self.to_world)
+            # print("to_local: ", self.to_local)
             self.update_bbox()
         else:
             self.has_transform = transform is not None
@@ -399,10 +409,10 @@ class Grid3d(SDFBase):
                 data = mi.Thread.thread().file_resolver().resolve(data)
                 print("data: ", data)
                 data = redistancing.redistance(mi.TensorXf(mi.VolumeGrid(data)))
-            print("data.shape: ", data.shape)
+            # print("data.shape: ", data.shape)
             self.texture = mi.Texture3f(data.shape[:3], 1, use_accel=False)
             self.texture.set_tensor(atleast_4d(data), migrate=False)
-            print("data.shape: ", data.shape)
+            # print("data.shape: ", data.shape)
             self.p = mi.Vector3f(0, 0, 0)
             self.to_world = transform
             self.to_local = self.to_world.inverse()
@@ -410,22 +420,22 @@ class Grid3d(SDFBase):
 
     def update_bbox(self):
         self.aabb = mi.ScalarBoundingBox3f()
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 0.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 2.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 2.0, 0.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 2.0, 2.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 0.0, 0.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 0.0, 2.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 2.0, 0.0))
-        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 2.0, 2.0))
         # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 0.0))
-        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 1.0))
-        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 1.0, 0.0))
-        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 1.0, 1.0))
-        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 0.0, 0.0))
-        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 0.0, 1.0))
-        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 1.0, 0.0))
-        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 1.0, 1.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 2.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 2.0, 0.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 2.0, 2.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 0.0, 0.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 0.0, 2.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 2.0, 0.0))
+        # self.aabb.expand(self.to_world @ mi.ScalarPoint3f(2.0, 2.0, 2.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 0.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 0.0, 1.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 1.0, 0.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(0.0, 1.0, 1.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 0.0, 0.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 0.0, 1.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 1.0, 0.0))
+        self.aabb.expand(self.to_world @ mi.ScalarPoint3f(1.0, 1.0, 1.0))
 
     def resolution(self):
         return self.grid.resolution()
@@ -579,10 +589,13 @@ class BoxSDF(SDFBase):
         return mi.BoundingBox3f(dr.detach(self.p) - 0.5 - delta, dr.detach(self.p) + 0.5 + delta)
 
 
-def create_sphere_sdf(res, center=[0.5, 0.5, 0.5], radius=0.3, noise_sigma=0.0):
+# CHANGED RADIUS FROM 0.3 TO 0.1
+def create_sphere_sdf(res, center=[0.5, 0.5, 0.5], radius=0.1, noise_sigma=0.0):
     z, y, x = np.meshgrid(np.linspace(0, 1, res[0]), np.linspace(
         0, 1, res[1]), np.linspace(0, 1, res[2]), indexing='ij')
     pts = np.stack([x.ravel(), y.ravel(), z.ravel()], axis=1)
+
+    # print("sphere res: ", res)
 
     if noise_sigma > 0:
         import scipy.ndimage
@@ -604,7 +617,6 @@ def create_sphere_sdf(res, center=[0.5, 0.5, 0.5], radius=0.3, noise_sigma=0.0):
         signed_dist = np.linalg.norm(pts - center, axis=-1) - radius
     sdf = np.reshape(signed_dist, res).astype(np.float32)
     return redistancing.redistance(mi.TensorXf(sdf))
-
 
 def create_block_sdf(resolution, center=[0.5, 0.5, 0.5]):
     r2 = resolution // 2

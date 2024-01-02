@@ -26,6 +26,7 @@ def render_reference_images(
     )
     render_folder = join(RENDER_DIR, scene_config.scene, scene_config.name, config.integrator, 'ref')
     
+    print(f'Rendering reference images to {render_folder}')
     os.makedirs(render_folder, exist_ok=True)
     for sensor_idx, sensor in enumerate(scene_config.sensors):
         set_sensor_res(sensor, mi.ScalarVector2i(scene_config.resx, scene_config.resy))
@@ -34,8 +35,11 @@ def render_reference_images(
             if verbose:
                 print(f'File exists, not rendering of {fn}')
         else:
+            print(f'Rendering reference image {fn}')
             img = mi.render(ref_scene, sensor=sensor, seed=sensor_idx + 41, spp=ref_spp)
+            bitmap = mi.Bitmap(img)
             mi.util.write_bitmap(fn, img[..., :3], write_async=False)
+            mi.util.write_bitmap(fn.replace('.exr', '.png'), bitmap, write_async=False)
 
 def copy_reference_images_to_output_dir(scene_config, config, output_dir):
     """Copies the reference images to the output directory and returns a list of them"""

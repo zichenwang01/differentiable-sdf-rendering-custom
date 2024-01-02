@@ -62,6 +62,8 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
         ref_scene_name, 
         shape_file='dummysdf.xml', # load initial sphere
         # sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_opt_255.vol'),
+        # sdf_filename=join(SCENE_DIR, 'sdfs', 'sphere_res=256.sdf'),
+        sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_res=256.sdf'),
         integrator=config.integrator, # load custom integrator
         resx=scene_config.resx, resy=scene_config.resy, 
         **mts_args
@@ -77,7 +79,7 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
     sdf_object = sdf_scene.integrator().sdf
     sdf_scene.integrator().warp_field = config.get_warpfield(sdf_object)
     
-    print("sdf object", sdf_object)
+    # print("sdf object", sdf_object)
 
     # Check SDF placeholder
     params = mi.traverse(sdf_scene)
@@ -92,7 +94,9 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
         for idx, sensor in enumerate(scene_config.sensors):
             img = mi.render(sdf_scene, sensor=sensor, seed=idx,
                             spp=config.spp * config.primal_spp_mult)
+            bitmap = mi.Bitmap(img)
             mi.util.write_bitmap(join(output_dir, f'init-{idx:02d}.exr'), img[..., :3])
+            mi.util.write_bitmap(join(output_dir, f'init-{idx:02d}.png'), bitmap)
 
     # Initialize sensor resolutions
     for sensor in scene_config.sensors:
@@ -113,6 +117,7 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
             loss = mi.Float(0.0)
             for idx, sensor in scene_config.get_sensor_iterator(i):
                 # Render image
+                # start = time.time()
                 img = mi.render(
                     sdf_scene, params=params, sensor=sensor, seed=seed, 
                     spp=config.spp * config.primal_spp_mult,
@@ -120,8 +125,11 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
                     spp_grad=config.spp
                 )
                 seed += 1 + len(scene_config.sensors)
+                # end = time.time()
+                # print("render time: ", end - start)
                 
                 # Compute image loss
+                # start = time.time()
                 loss_func = scene_config.loss
                 if loss_func.__name__ == 'l2_xixi':
                     img2 = mi.render(
@@ -130,12 +138,17 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
                         seed_grad=seed + 1 + len(scene_config.sensors), 
                         spp_grad=config.spp
                     )
-                    view_loss = loss_func(img, img2, ref_images[idx][sensor.film().crop_size()[0]]) / scene_config.batch_size
+                    # view_loss = loss_func(img, img2, ref_images[idx][sensor.film().crop_size()[0]]) / scene_config.batch_size
+                    view_loss = loss_func(img, img2, ref_images[idx][sensor.film().crop_size()[0]])
                 else:
-                    view_loss = scene_config.loss(img, ref_images[idx][sensor.film().crop_size()[0]]) / scene_config.batch_size
+                    # print(sensor.film().crop_size()[0])
+                    # view_loss = scene_config.loss(img, ref_images[idx][sensor.film().crop_size()[0]]) / scene_config.batch_size
+                    view_loss = scene_config.loss(img, ref_images[idx][sensor.film().crop_size()[0]])
                 
                 # Backpropagate loss
                 dr.backward(view_loss)
+                # end = time.time()
+                # print("loss time: ", end - start)
                 
                 # Save rendered image
                 bmp = resize_img(mi.Bitmap(img), scene_config.target_res)
@@ -145,10 +158,13 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
                 loss += view_loss
 
             # Compute regularization loss
+            # start = time.time()
             reg_loss = scene_config.eval_regularizer(opt, sdf_object, i)
             if dr.grad_enabled(reg_loss):
                 dr.backward(reg_loss)
             loss += dr.detach(reg_loss)
+            # end = time.time()
+            # print("regularization time: ", end - start)
 
             # Save checkpoint SDF
             scene_config.save_params(opt, output_dir, i, force=i == n_iter - 1)
@@ -157,19 +173,30 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
             scene_config.validate_gradients(opt, i)
             
             # Print loss to progress bar
-            loss_str = f'Loss: {loss[0]:.4f}'
-            if dr.grad_enabled(reg_loss):
-                loss_str += f' (reg (avg. x 1e4): {1e4*reg_loss[0] / dr.prod(sdf_object.shape):.4f})'
-            pbar.set_description(loss_str)
+            img_loss_mean = (loss - reg_loss) / scene_config.batch_size
+            pbar.set_description(f"img loss {1e3*img_loss_mean[0]:.2f}, reg loss {1e3*reg_loss[0]:.2f}")
+            
+            # loss_str = f'Loss: {1000*loss[0]:.4f}'
+            # if dr.grad_enabled(reg_loss):
+            #     loss_str += f' (reg (avg. x 1e4): {1e3*reg_loss[0] / dr.prod(sdf_object.shape):.4f})'
+            # pbar.set_description(loss_str)
             
             # Save loss
             loss_values.append(loss[0])
             
             # Update parameters
+            # start = time.time()
             opt.step()
+            # end = time.time()
+            # print("update time: ", end - start)
             scene_config.validate_params(opt, i)
             scene_config.update_scene(sdf_scene, i)
             params.update(opt)
+            
+            if i in scene_config.upsample_iter:
+                # upsample spp
+                config.spp *= 2
+                print(f"Upsampling to {config.spp} spp")
             
     finally:
         # Plot loss figure
@@ -179,9 +206,10 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
         plt.xlabel('Iterations')
         plt.ylabel('Objective function value')
         avg_loss = np.mean(np.array(loss_values)[-5:])
-        plt.title(f"Final loss: {100*loss_values[-1]:.3f} (avg. over 5 its: {100*avg_loss:.3f})")
+        plt.title(f"Final loss: {1000*loss_values[-1]:.3f} (avg. over 5 its: {1000*avg_loss:.3f})")
         plt.savefig(join(output_dir, 'loss.pdf'))
         plt.savefig(join(output_dir, 'loss.png'))
+        np.save(join(output_dir, "loss.npy"), loss_values)
 
         # Write out total time and basic config info to json
         d = {'total_time': time.time() - pbar.start_t, 'loss_values': loss_values}

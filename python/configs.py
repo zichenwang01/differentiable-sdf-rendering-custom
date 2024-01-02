@@ -18,12 +18,16 @@ class BaseConfig:
         self.use_finite_differences = False
         
         # optimization parameters
-        self.learning_rate = 4e-2
-        self.n_iter = 512
-        self.spp = 64
+        # self.learning_rate = 4e-2
+        self.learning_rate = 1e-3
+        # self.n_iter = 512
+        self.n_iter = 500
+        # self.spp = 64
+        self.spp = 16
         self.integrator = 'sdf_direct_reparam'
         
-        self.primal_spp_mult = 4
+        # self.primal_spp_mult = 4
+        self.primal_spp_mult = 1
         self.edge_epsilon = 0.01
         self.refined_intersection = False
         
