@@ -51,8 +51,8 @@ class ReparamIntegrator(mi.SamplingIntegrator):
             wavefront_size_limit = 0xffffffff
         else:
             wavefront_size_limit = 0x40000000      
-        if wavefront_size > wavefront_size_limit:
-            raise Exception(f"Wavefront {wavefront_size} exceeds {wavefront_size_limit}")
+        # if wavefront_size > wavefront_size_limit:
+        #     raise Exception(f"Wavefront {wavefront_size} exceeds {wavefront_size_limit}")
         
         sampler = sensor.sampler().clone()
         if spp != 0:
@@ -157,11 +157,14 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
-        # prepare film and sampler
-        sampler, spp = self.prepare(sensor=sensor, seed=seed, spp=spp, aovs=self.aov_names())
-
         # prepare SDF
         self.prepare_sdf(scene)
+        
+        import time
+        start = time.time()
+
+        # prepare film and sampler
+        sampler, spp = self.prepare(sensor=sensor, seed=seed, spp=spp, aovs=self.aov_names())
 
         # print("finish preparing")
 
@@ -234,6 +237,9 @@ class ReparamIntegrator(mi.SamplingIntegrator):
         # Develop the film given the block
         sensor.film().put_block(block)
         primal_image = sensor.film().develop()
+        
+        end = time.time()
+        # print("render time: ", end - start)
         return primal_image
 
     def render_backward(self, scene, params, grad_in, sensor=0, seed=0, spp=0):

@@ -33,6 +33,8 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
                    output_dir, config, write_ldr_images=True):
     """Main function that optmizes the geometry"""
 
+    print("optimize_shape")
+
     if IS_DEBUG:
         print("Enter geometry optimization")
  
@@ -61,6 +63,7 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
     sdf_scene = mi.load_file(
         ref_scene_name, 
         shape_file='dummysdf.xml', # load initial sphere
+        # shape_file='dummysdf_bottom.xml', # load initial sphere
         # sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_opt_255.vol'),
         # sdf_filename=join(SCENE_DIR, 'sdfs', 'sphere_res=256.sdf'),
         sdf_filename=join(SCENE_DIR, 'sdfs', 'bunny_res=256.sdf'),
@@ -68,6 +71,10 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
         resx=scene_config.resx, resy=scene_config.resy, 
         **mts_args
     )
+    
+    print(config)
+    print("integrator", sdf_scene.integrator())
+    print("integrator name", sdf_scene.integrator().warp_field)
     
     if IS_DEBUG:
         print("Loaded scene")
@@ -115,7 +122,10 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
         pbar = tqdm.tqdm(range(n_iter))
         for i in pbar:
             loss = mi.Float(0.0)
+            # print("here")
             for idx, sensor in scene_config.get_sensor_iterator(i):
+            # for sensor in [scene_config.sensors[2]]:
+                # idx = 2
                 # Render image
                 # start = time.time()
                 img = mi.render(
@@ -195,7 +205,7 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
             
             if i in scene_config.upsample_iter:
                 # upsample spp
-                config.spp *= 2
+                # config.spp *= 2
                 print(f"Upsampling to {config.spp} spp")
             
     finally:

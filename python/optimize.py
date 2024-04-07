@@ -36,10 +36,13 @@ def render_reference_images(
                 print(f'File exists, not rendering of {fn}')
         else:
             print(f'Rendering reference image {fn}')
-            img = mi.render(ref_scene, sensor=sensor, seed=sensor_idx + 41, spp=ref_spp)
+            print("ref_spp: ", ref_spp)
+            # img = mi.render(ref_scene, sensor=sensor, seed=sensor_idx + 41, spp=ref_spp)
+            img = mi.render(ref_scene, sensor=sensor, seed=0, spp=ref_spp)
             bitmap = mi.Bitmap(img)
             mi.util.write_bitmap(fn, img[..., :3], write_async=False)
             mi.util.write_bitmap(fn.replace('.exr', '.png'), bitmap, write_async=False)
+    print('Done rendering reference images')
 
 def copy_reference_images_to_output_dir(scene_config, config, output_dir):
     """Copies the reference images to the output directory and returns a list of them"""
@@ -60,6 +63,9 @@ def optimize(scene_name, config, opt_name, output_dir, ref_spp=1024,
     
     from opt_configs import get_opt_config
     from shape_opt import optimize_shape
+    from bottom_opt import optimize_bottom
+    from timed_opt import optimize_shape_timed
+    from suzanne_opt import optimize_suzanne
 
     mi.set_log_level(3 if verbose else mi.LogLevel.Warn)
 
@@ -75,8 +81,17 @@ def optimize(scene_name, config, opt_name, output_dir, ref_spp=1024,
     render_reference_images(opt_config, config, ref_spp=ref_spp, force=force, verbose=verbose, mts_args=mts_args)
     ref_image_paths = copy_reference_images_to_output_dir(opt_config, config, current_output_dir)
 
+    print("here")
+
     # optimize the geometry
-    optimize_shape(opt_config, mts_args, ref_image_paths, current_output_dir, config)
+    if opt_name == 'exp_logo_bottom':
+        optimize_bottom(opt_config, mts_args, ref_image_paths, current_output_dir, config)
+    elif opt_name == 'exp_suzanne_bottom':
+        optimize_suzanne(opt_config, mts_args, ref_image_paths, current_output_dir, config)
+    elif opt_name == 'exp_logo_timed':
+        optimize_shape_timed(opt_config, mts_args, ref_image_paths, current_output_dir, config)
+    else:
+        optimize_shape(opt_config, mts_args, ref_image_paths, current_output_dir, config)
 
 
 def main(args):
@@ -128,7 +143,7 @@ def main(args):
     parser.add_argument(
         '--refspp', 
         type=int, 
-        default=2048, 
+        default=1024, 
         help='Number of samples per pixel for reference images. Default: 2048'
     )
     

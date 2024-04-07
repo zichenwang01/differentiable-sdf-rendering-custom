@@ -125,7 +125,7 @@ def render_reference_object(scene_name, opt_config, image_output_dir,
 
 def eval_forward_gradient(
     scene, config, axis='x', 
-    spp=1024, fd_spp=8192, fd_eps=1e-3, sensor=0
+    spp=1024, fd_spp=10240, fd_eps=1e-4, sensor=0
 ):
     """Evalutes a forward gradient image for a given axis"""
     # load sdf
@@ -168,9 +168,16 @@ def eval_forward_gradient(
         scene.integrator().warp_field = config.get_warpfield(sdf)
         img = mi.render(scene, params=params, sensor=sensor,
                         integrator=scene.integrator(), spp=spp)
+        # import time 
+        # start = time.time()
         dr.forward(param)
         grad = dr.grad(img)
+        # end = time.time()
+        # print("grad time: ", end - start)
+        # start = time.time()
         dr.eval(grad)
+        # end = time.time()
+        # print("eval time: ", end - start)
 
     history = dr.kernel_history()
     total_time = sum(h['execution_time'] for h in history)

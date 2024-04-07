@@ -19,3 +19,4 @@ venv/
 *.err
 *.out
 *.sub
+exp/

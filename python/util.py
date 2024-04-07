@@ -184,6 +184,145 @@ def get_sensors(num_sensor=16, resx=256, resy=256):
         }))
     return sensors
 
+def get_sensors_big(num_sensor=24, resx=512, resy=512):
+    """Return a list of sensors arranged in a circle around the origin"""
+    sensors = []
+    for i in range(num_sensor):
+        angle = 360.0 / num_sensor * i
+        # angle = 0
+        sensors.append(mi.load_dict({
+            'type': 'perspective', 'fov': 45,
+            'sampler': {'type': 'independent'},
+            'film': {
+                'type': 'hdrfilm',
+                'width': resx, 'height': resy,
+                'filter': {'type': 'gaussian'}
+            },
+            'to_world': mi.ScalarTransform4f.translate([0.5, 0.5, 0.5]).rotate([0, 1, 0], angle).look_at(target=[0, 0, 0], origin=[0, 0, 1.3], up=[0, 1, 0]),
+        }))
+    return sensors
+
+def get_bottom_sensor(num_sensor=1, resx=1024, resy=1024):
+    sensors = []
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.5, 0.1, 0.5], origin=[0.5, 0.5, 1], up=[0, 1, 0]),
+    }))
+    return sensors
+
+def get_bottom_sensors(num_sensor=4, resx=1024, resy=1024):
+    sensors = []
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.5, 0.1, 0.5], origin=[0.5, 0.5, 1.0], up=[0, 1, 0]),
+    }))
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.5, 0.9, 0.5], origin=[0.5, 0.5, 1.0], up=[0, 1, 0]),
+    }))
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.1, 0.5, 0.5], origin=[0.5, 0.5, 1.0], up=[0, 1, 0]),
+    }))
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.9, 0.5, 0.5], origin=[0.5, 0.5, 1.0], up=[0, 1, 0]),
+    }))
+    return sensors
+
+def get_suzanne_sensors(num_sensor=6, resx=1024, resy=1024):
+    sensors = []
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.5, 0.1, 0.5], origin=[0.5, 0.5, 1.0], up=[0, 1, 0]),
+    }))
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.5, 0.9, 0.5], origin=[0.5, 0.5, 1.0], up=[0, 1, 0]),
+    }))
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.1, 0.5, 0.5], origin=[0.5, 0.5, 1.0], up=[0, 1, 0]),
+    }))
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.9, 0.5, 0.5], origin=[0.5, 0.5, 1.0], up=[0, 1, 0]),
+    }))
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.5, 0.5, 0.1], origin=[0.5, 0.1, 0.5], up=[0, 1, 0]),
+    }))
+    sensors.append(mi.load_dict({
+        'type': 'perspective', 'fov': 45,
+        'sampler': {'type': 'independent'},
+        'film': {
+            'type': 'hdrfilm',
+            'width': resx, 'height': resy,
+            'filter': {'type': 'gaussian'}
+        },
+        'to_world': mi.ScalarTransform4f.look_at(target=[0.5, 0.5, 0.9], origin=[0.5, 0.1, 0.5], up=[0, 1, 0]),
+    }))
+    return sensors
 
 def set_sensor_res(sensor, res):
     """Sets the resolution of an existing Mitsuba sensor"""

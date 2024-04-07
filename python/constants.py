@@ -19,6 +19,7 @@ SDF_DEFAULT_KEY = 'SamplingIntegrator.sdf.data'
 SDF_DEFAULT_KEY_P = 'SamplingIntegrator.sdf.p'
 
 # debug flag
+# IS_DEBUG = True
 IS_DEBUG = False
 
 del __SCRIPT_DIR

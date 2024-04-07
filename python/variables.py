@@ -109,7 +109,7 @@ class VolumeVariable(Variable):
         resolution = grid.shape[0]
         grid = grid.flatten()
         grid = [resolution] + grid.tolist()
-        np.savetxt(os.path.join(output_dir, f"{resolution}.sdf"), grid, fmt='%f')
+        np.savetxt(os.path.join(output_dir, f"{resolution}_{suffix}.sdf"), grid, fmt='%f')
 
     def restore(self, opt, output_dir, suffix):
         loaded_data = np.array(mi.VolumeGrid(self.get_variable_path(output_dir, suffix)))
@@ -183,7 +183,8 @@ class SdfVariable(VolumeVariable):
             self.shape = sdf.shape
             if self.bbox_constraint:
                 self.update_box_sdf(self.shape)
-            self.initial_lr /= 1
+            # custom lr
+            self.initial_lr /= 2
             opt.set_learning_rate(self.initial_lr)
             opt.set_learning_rate({k: self.initial_lr})
             print(opt)
