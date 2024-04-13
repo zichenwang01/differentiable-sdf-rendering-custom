@@ -324,6 +324,37 @@ def get_suzanne_sensors(num_sensor=6, resx=1024, resy=1024):
     }))
     return sensors
 
+def get_h2_sensors(
+    num_sensor=25, num_sensor_theta=12, num_sensor_phi=4, 
+    resx=512, resy=512, radius=1.3
+):
+    """Return a list of sensors arranged evenly on a hemisphere"""
+    import numpy as np
+    sensors = []
+    for j in range(num_sensor_phi):
+        for i in range(num_sensor_theta // (j+1)):
+            # Convert the index to spherical coordinates
+            theta = np.pi * 2 * i / (num_sensor_theta // (j+1)) # azimuthal angle, from 0 to 2pi
+            phi = np.pi / 3 * j / num_sensor_phi  # zenith angle, from 0 to pi/2
+            # phi = np.arccos(1 - 2 * j / (num_sensor_phi - 1))  # zenith angle, from 0 to pi/2
+
+            # Convert spherical coordinates to Cartesian coordinates
+            z = np.cos(phi) * np.cos(theta) * radius + 0.5
+            x = np.cos(phi) * np.sin(theta) * radius + 0.5
+            y = np.sin(phi) * radius + 0.35
+
+            sensors.append(mi.load_dict({
+                'type': 'perspective', 'fov': 45,
+                'sampler': {'type': 'independent'},
+                'film': {
+                    'type': 'hdrfilm',
+                    'width': resx, 'height': resy,
+                    'filter': {'type': 'gaussian'}
+                },
+                'to_world': mi.ScalarTransform4f.look_at(target=[0.5, 0.5, 0.5], origin=[x, y, z], up=[0, 1, 0]),
+            }))
+    return sensors
+
 def set_sensor_res(sensor, res):
     """Sets the resolution of an existing Mitsuba sensor"""
     params = mi.traverse(sensor)

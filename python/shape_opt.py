@@ -94,6 +94,9 @@ def optimize_shape(scene_config, mts_args, ref_image_paths,
            "Could not find a placeholder shape for the SDF"
     params.keep(scene_config.param_keys)
 
+    # print("params: ", params)
+    # exit(0)
+
     # print("start optimization")
 
     # Render shape initialization

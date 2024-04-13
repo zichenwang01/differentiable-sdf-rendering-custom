@@ -10,7 +10,7 @@ from configs import apply_cmdline_args
 from variables import VolumeVariable, SdfVariable
 from util import get_file_sensors, get_regular_cameras, \
                  set_sensor_res, get_regular_cameras_top
-from util import get_sensors, get_bottom_sensor, get_bottom_sensors, get_suzanne_sensors, get_sensors_big
+from util import get_sensors, get_bottom_sensor, get_bottom_sensors, get_suzanne_sensors, get_sensors_big, get_h2_sensors
 
 import losses
 import regularizations as reg
@@ -102,19 +102,24 @@ class SdfConfig(SceneConfig):
                           regularizer=sdf_regularizer, regularizer_weight=sdf_regularizer_weight)
         self.variables.append(sdf)
         
+        # print("adding color variable")
+        
         """Color Variable"""
         # reflectance 
         if len(param_keys) > 1 and ('reflectance' in param_keys[1] or 'base_color' in param_keys[1]):
+            print("adding color variable")
+            # print(param_keys[1].shape)
             self.variables.append(VolumeVariable(
                 param_keys[1], (sdf_res, sdf_res, sdf_res, 3),
-                init_value=tex_init_value,
-                upsample_iter=tex_upsample_iter, 
+                # init_value=tex_init_value,
+                # upsample_iter=tex_upsample_iter, 
                 beta=self.param_averaging_beta, 
                 lr=texture_lr
             ))
             
         # roughness
         if len(param_keys) > 2 and 'roughness' in param_keys[2]:
+            print("adding roughness variable")
             self.variables.append(VolumeVariable(
                 param_keys[2], (sdf_res // 4, sdf_res // 4, sdf_res // 4, 1),
                 upsample_iter=[128, 180], 
@@ -319,13 +324,31 @@ CONFIG_DICTS = [
         'sdf_regularizer_weight': 1e-5,
         'sdf_regularizer': reg.eval_discrete_laplacian_reg,
         'loss': losses.l1,
-        'upsample_iter': [200, 400, 600, 800],
+        'upsample_iter': [200, 400, 600],
         'render_upsample_iter': [],
         'use_multiscale_rendering': False,
         'adaptive_learning_rate': False,
         'sdf_res': 32,
         'resx': 512, 'resy': 512,
         'batch_size': 6,
+        'param_keys': [SDF_DEFAULT_KEY],
+        'param_averaging_beta': 0.95, 
+    }, 
+
+    {   # exp_vbunny_h2 (and big)
+        'name': 'exp_vbunny_h2',
+        'config_class': SdfConfig,
+        'sensors': (get_h2_sensors, 25),
+        'sdf_regularizer_weight': 1e-2,
+        'sdf_regularizer': reg.eval_discrete_laplacian_reg,
+        'loss': losses.l1,
+        'upsample_iter': [200, 400, 600],
+        'render_upsample_iter': [],
+        'use_multiscale_rendering': False,
+        'adaptive_learning_rate': False,
+        'sdf_res': 32,
+        'resx': 512, 'resy': 512,
+        'batch_size': 5,
         'param_keys': [SDF_DEFAULT_KEY],
         'param_averaging_beta': 0.95, 
     }, 
@@ -507,6 +530,42 @@ CONFIG_DICTS = [
         'resx': 512, 'resy': 512,
         'batch_size': 12,
         'param_keys': [SDF_DEFAULT_KEY],
+        'param_averaging_beta': 0.95, 
+    }, 
+
+    {   # exp_h2 (and big)
+        'name': 'exp_h2',
+        'config_class': SdfConfig,
+        'sensors': (get_h2_sensors, 25),
+        'sdf_regularizer_weight': 1e-2,
+        'sdf_regularizer': reg.eval_discrete_laplacian_reg,
+        'loss': losses.l1,
+        'upsample_iter': [200, 400, 600, 800],
+        'render_upsample_iter': [],
+        'use_multiscale_rendering': False,
+        'adaptive_learning_rate': False,
+        'sdf_res': 32,
+        'resx': 512, 'resy': 512,
+        'batch_size': 5,
+        'param_keys': [SDF_DEFAULT_KEY],
+        'param_averaging_beta': 0.95, 
+    }, 
+
+{   # exp_diffuse (h2 and big)
+        'name': 'exp_diffuse',
+        'config_class': SdfConfig,
+        'sensors': (get_h2_sensors, 25),
+        'sdf_regularizer_weight': 1e-4,
+        'sdf_regularizer': reg.eval_discrete_laplacian_reg,
+        'loss': losses.l1,
+        'upsample_iter': [500, 1000, 1500],
+        'render_upsample_iter': [],
+        'use_multiscale_rendering': False,
+        'adaptive_learning_rate': False,
+        'sdf_res': 64,
+        'resx': 512, 'resy': 512,
+        'batch_size': 5,
+        'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.reflectance.volume.data'],
         'param_averaging_beta': 0.95, 
     }, 
 

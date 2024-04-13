@@ -607,7 +607,7 @@ class BoxSDF(SDFBase):
 
 
 # CHANGED RADIUS FROM 0.3 TO 0.1 for small, 0.2 for big
-def create_sphere_sdf(res, center=[0.5, 0.5, 0.5], radius=0.2, noise_sigma=0.0):
+def create_sphere_sdf(res, center=[0.5, 0.5, 0.5], radius=0.3, noise_sigma=0.0):
     z, y, x = np.meshgrid(np.linspace(0, 1, res[0]), np.linspace(
         0, 1, res[1]), np.linspace(0, 1, res[2]), indexing='ij')
     pts = np.stack([x.ravel(), y.ravel(), z.ravel()], axis=1)
