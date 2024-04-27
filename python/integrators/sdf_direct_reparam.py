@@ -13,7 +13,7 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
         # self.hide_emitters = props.get('hide_emitters', False)
         # self.hide_emitters = props.get('hide_emitters', True)
         # self.hide_emitters = True
-        self.hide_emitters = False
+        self.hide_emitters = False 
         self.detach_indirect_si = props.get('detach_indirect_si', False)
         self.decouple_reparam = props.get('decouple_reparam', False)
 
@@ -133,6 +133,7 @@ class SdfDirectReparamIntegrator(ReparamIntegrator):
 
         aovs = [extra_output[k] if (extra_output is not None) and (k in extra_output) else mi.Float(0.0) for k in self.aov_names()]
         
+        # return dr.select(valid_ray, mi.Spectrum(result), 1.0), valid_ray, primary_det, aovs # white background
         return dr.select(valid_ray, mi.Spectrum(result), 0.0), valid_ray, primary_det, aovs
 
 

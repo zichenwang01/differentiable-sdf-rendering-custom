@@ -107,12 +107,13 @@ class SdfConfig(SceneConfig):
         """Color Variable"""
         # reflectance 
         if len(param_keys) > 1 and ('reflectance' in param_keys[1] or 'base_color' in param_keys[1]):
-            print("adding color variable")
-            # print(param_keys[1].shape)
+            # custom init value
+            tex_init_value = mi.Color3f(0.8, 0.2, 0.2)
+            print("init value: ", tex_init_value)
             self.variables.append(VolumeVariable(
                 param_keys[1], (sdf_res, sdf_res, sdf_res, 3),
-                # init_value=tex_init_value,
-                # upsample_iter=tex_upsample_iter, 
+                init_value=tex_init_value,
+                upsample_iter=tex_upsample_iter, 
                 beta=self.param_averaging_beta, 
                 lr=texture_lr
             ))
@@ -551,18 +552,40 @@ CONFIG_DICTS = [
         'param_averaging_beta': 0.95, 
     }, 
 
-{   # exp_diffuse (h2 and big)
-        'name': 'exp_diffuse',
+    {   # exp_diffuse (h2 and big)
+        'name': 'exp_diffuse_adaptive',
         'config_class': SdfConfig,
-        'sensors': (get_h2_sensors, 25),
+        'sensors': (get_h2_sensors, 50),
         'sdf_regularizer_weight': 1e-4,
         'sdf_regularizer': reg.eval_discrete_laplacian_reg,
         'loss': losses.l1,
-        'upsample_iter': [500, 1000, 1500],
+        'upsample_iter': [500, 1000, 2000, 3000],
+        'tex_upsample_iter': [500, 1000, 2000],
+        'render_upsample_iter': [],
+        'use_multiscale_rendering': False,
+        'adaptive_learning_rate': True,
+        'sdf_res': 64,
+        'resx': 512, 'resy': 512,
+        'batch_size': 5,
+        'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.reflectance.volume.data'],
+        'param_averaging_beta': 0.95, 
+    }, 
+
+    {   # exp_diffuse (h2 and big)
+        'name': 'exp_diffuse',
+        'config_class': SdfConfig,
+        'sensors': (get_h2_sensors, 50),
+        'sdf_regularizer_weight': 1e-4,
+        'sdf_regularizer': reg.eval_discrete_laplacian_reg,
+        'loss': losses.l1,
+        # 'upsample_iter': [5, 9, 10, 11, 12, 13, 2000, 3000],
+        # 'tex_upsample_iter': [5, 10, 2000],
+        'upsample_iter': [500, 1000, 2000, 3000, 3500, 4000, 4500],
+        'tex_upsample_iter': [500, 1000, 2000],
         'render_upsample_iter': [],
         'use_multiscale_rendering': False,
         'adaptive_learning_rate': False,
-        'sdf_res': 64,
+        'sdf_res': 32,
         'resx': 512, 'resy': 512,
         'batch_size': 5,
         'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.reflectance.volume.data'],
@@ -1215,6 +1238,25 @@ CONFIG_DICTS = [
         'name': 'diffuse-64-hqq',
         'parent': 'diffuse-12-hqq',
         'sensors': (get_regular_cameras, 64),
+    }, 
+    
+    {
+        'name': 'diffuse-hqq',
+        'parent': 'diffuse-12-hqq',
+        'sensors': (get_h2_sensors, 50),
+    }, 
+    
+    {   # custom
+        'name': 'diffuse-hqq-5000',
+        'parent': 'base',
+        'batch_size': 5,
+        'sensors': (get_h2_sensors, 50),
+        'use_multiscale_rendering': True,
+        'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.reflectance.volume.data'],
+        'render_upsample_iter': [2200, 3000],
+        'upsample_iter': [1280, 1800, 2200, 2700],
+        'sdf_res': 256,
+        'resx': 512, 'resy': 512,
     }, 
     
     {

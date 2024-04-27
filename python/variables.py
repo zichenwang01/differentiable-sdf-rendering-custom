@@ -84,15 +84,22 @@ class VolumeVariable(Variable):
         self.shape = np.array(shape)
         self.init_value = init_value
         self.upsample_iter = upsample_iter
-        # EDIT: COMMENTED OUT
+        # # EDIT: COMMENTED OUT
         # if self.upsample_iter is not None:
         #     self.upsample_iter = list(self.upsample_iter)
         #     for i in range(3):
         #         self.shape[i] = self.shape[i] // 2 ** len(self.upsample_iter)
 
     def initialize(self, opt):
-        opt[self.k] = dr.full(mi.TensorXf, self.init_value, self.shape)
+        # opt[self.k] = dr.full(mi.TensorXf, self.init_value, self.shape)
+        if isinstance(self.init_value, mi.Color3f):
+            # custom init color
+            opt[self.k] = dr.full(mi.TensorXf, 0.2, self.shape)  
+            opt[self.k][..., 0] = 0.8
+        else:
+            opt[self.k] = dr.full(mi.TensorXf, self.init_value, self.shape)        
 
+        self.initial_lr = opt.lr[self.k]
         if self.lr is not None:
             opt.set_learning_rate({self.k, self.lr})
 
@@ -122,6 +129,14 @@ class VolumeVariable(Variable):
         k = self.k
         if self.upsample_iter is not None and i in self.upsample_iter:
             opt[k] = mi.TensorXf(upsample_grid(opt[k]))
+            print("upsample appearance grid to ", opt[k].shape)
+
+        # custom lr
+        if self.upsample_iter is not None and i in self.upsample_iter:
+            self.initial_lr /= 2
+            opt.set_learning_rate(self.initial_lr)
+            opt.set_learning_rate({k: self.initial_lr})
+            print("update tex optimizer: ", opt)
 
         if k.endswith('reflectance.volume.data') or k.endswith('base_color.volume.data'):
             opt[k] = dr.clamp(opt[k], 1e-5, 1.0)
@@ -179,15 +194,22 @@ class SdfVariable(VolumeVariable):
     def validate(self, opt, i):
         k = self.k
         if self.upsample_iter is not None and i in self.upsample_iter:
-            sdf = upsample_sdf(opt[k])
+            if opt[k].shape[0] != 512:
+                sdf = upsample_sdf(opt[k])
+            else: 
+                sdf = opt[k]
             self.shape = sdf.shape
             if self.bbox_constraint:
                 self.update_box_sdf(self.shape)
             # custom lr
-            self.initial_lr /= 2
-            opt.set_learning_rate(self.initial_lr)
-            opt.set_learning_rate({k: self.initial_lr})
-            print(opt)
+            if not self.adaptive_learning_rate:
+                self.initial_lr /= 2
+                if opt[k].shape[0] == 256:
+                    self.initial_lr /= 2
+                opt.set_learning_rate(self.initial_lr)
+                opt.set_learning_rate({k: self.initial_lr})
+                print("update optimizer: ", opt)
+                print("upsample sdf resolution to ", self.shape)
         else:
             self.shape = opt[k].shape
             sdf = opt[k]

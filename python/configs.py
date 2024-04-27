@@ -18,10 +18,10 @@ class BaseConfig:
         self.use_finite_differences = False
         
         # optimization parameters
-        self.learning_rate = 5e-3
-        # self.learning_rate = 1e-4
+        self.learning_rate = 1e-2
+        # self.learning_rate = 4e-2
         # self.n_iter = 512
-        self.n_iter = 2000
+        self.n_iter = 5000
         self.spp = 64
         # self.spp = 16
         self.integrator = 'sdf_direct_reparam'

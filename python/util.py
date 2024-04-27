@@ -329,6 +329,9 @@ def get_h2_sensors(
     resx=512, resy=512, radius=1.3
 ):
     """Return a list of sensors arranged evenly on a hemisphere"""
+    if num_sensor == 50:
+        num_sensor_theta = 24
+    
     import numpy as np
     sensors = []
     for j in range(num_sensor_phi):
