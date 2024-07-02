@@ -34,6 +34,16 @@ def simple_lr_decay(initial_lrate, decay, i):
         lr = lr / 2
     return lr
 
+# def simple_lr_decay(initial_lrate, decay, i):
+#     """Simple learning rate decay for adaptive learning rates"""
+#     lr = initial_lrate / (1 + decay * i / 5)
+
+#     # Hardcoded for now: further decay LR as target (512 iterations) is reached
+#     if i > 4800:
+#         lr = lr / 2
+#     if i > 5000:
+#         lr = lr / 2
+#     return lr
 
 class Variable:
     """Represents a variable in an optimization that can be initialized, updated and saved"""
@@ -204,7 +214,7 @@ class SdfVariable(VolumeVariable):
             # custom lr
             if not self.adaptive_learning_rate:
                 self.initial_lr /= 2
-                if opt[k].shape[0] == 256:
+                if opt[k].shape[0] == 128:
                     self.initial_lr /= 2
                 opt.set_learning_rate(self.initial_lr)
                 opt.set_learning_rate({k: self.initial_lr})

@@ -31,7 +31,8 @@ class SceneConfig:
         self.target_res = mi.ScalarPoint2i(resy, resx)
         self.init_res = self.target_res
         self.param_keys = param_keys
-        self.checkpoint_frequency = 64
+        # self.checkpoint_frequency = 64
+        self.checkpoint_frequency = 500
         self.variables = []
         self.batch_size = batch_size if batch_size is not None else len(sensors)
         self.param_averaging_beta = param_averaging_beta
@@ -553,25 +554,6 @@ CONFIG_DICTS = [
     }, 
 
     {   # exp_diffuse (h2 and big)
-        'name': 'exp_diffuse_adaptive',
-        'config_class': SdfConfig,
-        'sensors': (get_h2_sensors, 50),
-        'sdf_regularizer_weight': 1e-4,
-        'sdf_regularizer': reg.eval_discrete_laplacian_reg,
-        'loss': losses.l1,
-        'upsample_iter': [500, 1000, 2000, 3000],
-        'tex_upsample_iter': [500, 1000, 2000],
-        'render_upsample_iter': [],
-        'use_multiscale_rendering': False,
-        'adaptive_learning_rate': True,
-        'sdf_res': 64,
-        'resx': 512, 'resy': 512,
-        'batch_size': 5,
-        'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.reflectance.volume.data'],
-        'param_averaging_beta': 0.95, 
-    }, 
-
-    {   # exp_diffuse (h2 and big)
         'name': 'exp_diffuse',
         'config_class': SdfConfig,
         'sensors': (get_h2_sensors, 50),
@@ -589,6 +571,44 @@ CONFIG_DICTS = [
         'resx': 512, 'resy': 512,
         'batch_size': 5,
         'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.reflectance.volume.data'],
+        'param_averaging_beta': 0.95, 
+    }, 
+
+    {   # exp_principled
+        'name': 'exp_principled',
+        'config_class': SdfConfig,
+        'sensors': (get_h2_sensors, 50),
+        'sdf_regularizer_weight': 1e-4,
+        'sdf_regularizer': reg.eval_discrete_laplacian_reg,
+        'loss': losses.l1,
+        'upsample_iter': [500, 1000, 2000, 3000, 3500, 4000, 4500],
+        'tex_upsample_iter': [500, 1000, 2000],
+        'render_upsample_iter': [],
+        'use_multiscale_rendering': False,
+        'adaptive_learning_rate': False,
+        'sdf_res': 32,
+        'resx': 512, 'resy': 512,
+        'batch_size': 5,
+        'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.base_color.volume.data', 'main-bsdf.roughness.volume.data'],
+        'param_averaging_beta': 0.95, 
+    }, 
+
+    {   # exp_metallic
+        'name': 'exp_metallic',
+        'config_class': SdfConfig,
+        'sensors': (get_h2_sensors, 50),
+        'sdf_regularizer_weight': 1e-4,
+        'sdf_regularizer': reg.eval_discrete_laplacian_reg,
+        'loss': losses.l1,
+        'upsample_iter': [500, 1000, 2000, 3000, 3500, 4000, 4500],
+        'tex_upsample_iter': [500, 1000, 2000],
+        'render_upsample_iter': [],
+        'use_multiscale_rendering': False,
+        'adaptive_learning_rate': False,
+        'sdf_res': 32,
+        'resx': 512, 'resy': 512,
+        'batch_size': 5,
+        'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.base_color.volume.data', 'main-bsdf.roughness.volume.data', 'main-bsdf.metallic.volume.data'],
         'param_averaging_beta': 0.95, 
     }, 
 
@@ -1240,7 +1260,7 @@ CONFIG_DICTS = [
         'sensors': (get_regular_cameras, 64),
     }, 
     
-    {
+    {   # custom
         'name': 'diffuse-hqq',
         'parent': 'diffuse-12-hqq',
         'sensors': (get_h2_sensors, 50),
@@ -1255,6 +1275,25 @@ CONFIG_DICTS = [
         'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.reflectance.volume.data'],
         'render_upsample_iter': [2200, 3000],
         'upsample_iter': [1280, 1800, 2200, 2700],
+        'sdf_res': 256,
+        'resx': 512, 'resy': 512,
+    }, 
+    
+    {   # custom
+        'name': 'principled-hqq',
+        'parent': 'principled-12-hqq',
+        'sensors': (get_h2_sensors, 50),
+    }, 
+  
+    {   # custom
+        'name': 'metallic-hqq',
+        'parent': 'base',
+        'batch_size': 5,
+        'sensors': (get_h2_sensors, 50),
+        'use_multiscale_rendering': True,
+        'param_keys': [SDF_DEFAULT_KEY, 'main-bsdf.base_color.volume.data', 'main-bsdf.roughness.volume.data', 'main-bsdf.metallic.volume.data'],
+        'render_upsample_iter': [220, 300],
+        'upsample_iter': [128, 180, 220, 270],
         'sdf_res': 256,
         'resx': 512, 'resy': 512,
     }, 

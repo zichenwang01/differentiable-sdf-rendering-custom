@@ -30,7 +30,7 @@ print()
 # ------------------------------ SCENE ------------------------------
 # scene name
 # scene_name = '/home/zw336/IR/differentiable-sdf-rendering/scenes/dragon/dragon.xml'
-scene_name = '/home/zw336/IR/differentiable-sdf-rendering/scenes/custom_bottom.xml'
+scene_name = '/home/zw336/IR/differentiable-sdf-rendering-modified/scenes/custom_bottom.xml'
 # scene_name = '/home/zw336/IR/differentiable-sdf-rendering/scenes/custom.xml'
 # scene_name = '/home/zw336/IR/differentiable-sdf-rendering/scenes/custom_display.xml'
 
@@ -45,12 +45,12 @@ mesh_name = 'dummysdf.xml'
 from constants import SCENE_DIR
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'bunny_res=256.sdf')
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'bunny_background_res=512.sdf')
-sdf_filename = join(SCENE_DIR, 'sdfs', 'bunny_bottom_res=256.sdf')
+# sdf_filename = join(SCENE_DIR, 'sdfs', 'bunny_bottom_res=256.sdf')
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'dragon_background_res=512.sdf')
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'dragon_bottom_res=512.sdf')
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'buddha_background_res=512.sdf')
 # sdf_filename = join(SCENE_DIR, 'sdfs', 'buddha_bottom_res=512.sdf')
-# sdf_filename = join(SCENE_DIR, 'sdfs', 'buddha_bottom_rotated.sdf')
+sdf_filename = join(SCENE_DIR, 'sdfs', 'buddha_bottom_rotated.sdf')
 # sdf_filename = '/home/zw336/IR/bp/data/bottom_plane/vbunny_z_res=512.sdf'
 
 # sensor name
